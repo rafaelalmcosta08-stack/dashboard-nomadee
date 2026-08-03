@@ -356,15 +356,6 @@ export default function ViaturaPage() {
                   <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-black/75 text-foreground border border-white/10 rounded-full">
                     Divisão: {item.unit}
                   </span>
-
-                  {/* Status */}
-                  <span className={`absolute top-3 right-3 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded border ${
-                    allowed 
-                      ? 'bg-green-500/10 text-green-400 border-green-500/20' 
-                      : 'bg-red-500/10 text-red-400 border-red-500/20'
-                  }`}>
-                    {allowed ? 'Condução Autorizada' : 'Condução Bloqueada'}
-                  </span>
                 </div>
 
                 {/* Detalhes */}
@@ -372,9 +363,6 @@ export default function ViaturaPage() {
                   <div>
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <h3 className="text-base font-bold tracking-tight truncate text-foreground">{item.name}</h3>
-                      <span className="font-mono text-xs font-semibold px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20 shrink-0">
-                        Prefixo: {item.prefix}
-                      </span>
                     </div>
 
                     <div className="space-y-3 mt-4 border-t border-border/10 pt-3">

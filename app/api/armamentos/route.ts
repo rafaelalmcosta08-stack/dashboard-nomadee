@@ -84,10 +84,11 @@ export async function POST(req: NextRequest) {
 
   if (action === 'create') {
     const { name, photoUrl, code, category, minPatente, allowedUnits } = body
-    if (!name?.trim() || !category?.trim() || !minPatente) {
+    if (!name?.trim() || !minPatente) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
 
+    const catName = category?.trim() || 'Armamento'
     const resolvedPhotoUrl = await resolveImageUrl(photoUrl || '')
     const finalCode = code?.trim() || `ARM-${Math.floor(1000 + Math.random() * 9000)}`
     const minPatenteStr = Array.isArray(minPatente) ? JSON.stringify(minPatente) : String(minPatente).trim()
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       photo_url: resolvedPhotoUrl || null,
       code: finalCode,
-      category: category.trim(),
+      category: catName,
       min_patente: minPatenteStr,
       allowed_units: Array.isArray(allowedUnits) ? allowedUnits : [],
       created_at: new Date().toISOString()

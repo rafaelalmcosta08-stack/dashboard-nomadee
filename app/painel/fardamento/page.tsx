@@ -286,7 +286,7 @@ export default function FardamentoPage() {
 
       {/* Filtros */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-        <div className="relative">
+        <div className="relative sm:col-span-2">
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-muted-foreground" />
           <input
             type="text"
@@ -295,19 +295,6 @@ export default function FardamentoPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-secondary/20 rounded-xl border border-border/50 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
           />
-        </div>
-
-        <div>
-          <select
-            value={filterCategory}
-            onChange={(e) => setFilterCategory(e.target.value)}
-            className="w-full px-4 py-2.5 bg-secondary/20 rounded-xl border border-border/50 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-          >
-            <option value="Todas">Todas as Categorias</option>
-            {CATEGORIES.map(cat => (
-              <option key={cat} value={cat}>{cat}</option>
-            ))}
-          </select>
         </div>
 
         <div>
@@ -352,19 +339,6 @@ export default function FardamentoPage() {
                     className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                     referrerPolicy="no-referrer"
                   />
-                  {/* Categoria Badge */}
-                  <span className="absolute top-3 left-3 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-black/75 text-foreground border border-white/10 rounded-full">
-                    {item.category}
-                  </span>
-
-                  {/* Status de Permissão */}
-                  <span className={`absolute top-3 right-3 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider rounded border ${
-                    allowed 
-                      ? 'bg-green-500/10 text-green-400 border-green-500/20' 
-                      : 'bg-red-500/10 text-red-400 border-red-500/20'
-                  }`}>
-                    {allowed ? 'Autorizado' : 'Não Autorizado'}
-                  </span>
                 </div>
 
                 {/* Detalhes do item */}
