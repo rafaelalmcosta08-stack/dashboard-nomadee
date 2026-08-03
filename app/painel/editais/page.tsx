@@ -249,7 +249,19 @@ export default function EditaisPage() {
         }).format(new Date()).replace(' ', 'T')
 
         const activeEditalIds = (data.editais || [])
-          .filter((e: any) => e.endDate >= nowStr)
+          .filter((e: any) => {
+            if (!e.endDate) return false
+            const cleanEnd = e.endDate.trim().replace(' ', 'T')
+            const cleanNow = nowStr.trim().replace(' ', 'T')
+            const paddedEnd = cleanEnd.length === 16 ? `${cleanEnd}:00` : cleanEnd
+            const paddedNow = cleanNow.length === 16 ? `${cleanNow}:00` : cleanNow
+            try {
+              const endMs = new Date(paddedEnd).getTime()
+              const nowMs = new Date(paddedNow).getTime()
+              if (!isNaN(endMs) && !isNaN(nowMs)) return endMs >= nowMs
+            } catch {}
+            return paddedEnd >= paddedNow
+          })
           .map((e: any) => e.id)
 
         for (const id of activeEditalIds) {
@@ -628,8 +640,22 @@ export default function EditaisPage() {
     )
   })
 
-  const editaisAbertos = filteredEditais.filter(e => e.endDate >= currentT)
-  const editaisEncerrados = filteredEditais.filter(e => e.endDate < currentT)
+  const isDateActive = (endDateStr: string | undefined | null) => {
+    if (!endDateStr) return false
+    const cleanEnd = endDateStr.trim().replace(' ', 'T')
+    const cleanNow = (currentT || '').trim().replace(' ', 'T')
+    const paddedEnd = cleanEnd.length === 16 ? `${cleanEnd}:00` : cleanEnd
+    const paddedNow = cleanNow.length === 16 ? `${cleanNow}:00` : cleanNow
+    try {
+      const endMs = new Date(paddedEnd).getTime()
+      const nowMs = paddedNow ? new Date(paddedNow).getTime() : Date.now()
+      if (!isNaN(endMs) && !isNaN(nowMs)) return endMs >= nowMs
+    } catch {}
+    return paddedEnd >= paddedNow
+  }
+
+  const editaisAbertos = filteredEditais.filter(e => isDateActive(e.endDate))
+  const editaisEncerrados = filteredEditais.filter(e => !isDateActive(e.endDate))
 
   // Quick evaluation panel trigger
   const triggerEvaluationForEdital = (edital: Edital) => {

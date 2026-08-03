@@ -112,28 +112,35 @@ async function writeCourses(courses: Course[]) {
   const admin = getAdminClient()
   if (admin) {
     try {
-      const toInsert = courses.map(c => ({
-        id: c.id,
-        title: c.title,
-        description: c.description,
-        requirements: c.requirements,
-        start_date: c.startDate,
-        end_date: c.endDate,
-        vagas_limit: c.vagasLimit,
-        creator_id: c.creatorId,
-        creator_qra: c.creatorQra,
-        created_at: c.createdAt,
-        instructor_id: c.instructorId,
-        instructor_qra: c.instructorQra,
-        subscribers: c.subscribers || [],
-        read_by: c.readBy || [],
-        evaluations: c.evaluations || {}
-      }))
+      if (courses.length > 0) {
+        const toInsert = courses.map(c => ({
+          id: c.id,
+          title: c.title,
+          description: c.description,
+          requirements: c.requirements,
+          start_date: c.startDate,
+          end_date: c.endDate,
+          vagas_limit: c.vagasLimit,
+          creator_id: c.creatorId,
+          creator_qra: c.creatorQra,
+          created_at: c.createdAt,
+          instructor_id: c.instructorId,
+          instructor_qra: c.instructorQra,
+          subscribers: c.subscribers || [],
+          read_by: c.readBy || [],
+          evaluations: c.evaluations || {}
+        }))
 
-      const ids = courses.map(c => c.id)
-      if (ids.length > 0) {
-        await admin.from('cursos').delete().not('id', 'in', `(${ids.join(',')})`)
-        await admin.from('cursos').upsert(toInsert)
+        const { error: upsertErr } = await admin.from('cursos').upsert(toInsert)
+        if (upsertErr) {
+          console.error('Database cursos upsert error:', upsertErr)
+        }
+
+        const ids = courses.map(c => `"${c.id}"`).join(',')
+        const { error: deleteErr } = await admin.from('cursos').delete().not('id', 'in', `(${ids})`)
+        if (deleteErr) {
+          console.error('Database cursos delete sync error:', deleteErr)
+        }
       } else {
         await admin.from('cursos').delete().neq('id', 'placeholder_nonexistent')
       }
@@ -142,7 +149,11 @@ async function writeCourses(courses: Course[]) {
     }
   }
 
-  await fs.writeFile(DATA_FILE, JSON.stringify(courses, null, 2), 'utf8')
+  try {
+    await fs.writeFile(DATA_FILE, JSON.stringify(courses, null, 2), 'utf8')
+  } catch (err) {
+    console.error('File courses write error:', err)
+  }
 }
 
 // Broadcast to SSE helper

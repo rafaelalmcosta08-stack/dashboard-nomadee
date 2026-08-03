@@ -233,7 +233,19 @@ export default function CursosPage() {
         }).format(new Date()).replace(' ', 'T')
 
         const activeCourseIds = (data.courses || [])
-          .filter((c: any) => c.endDate >= nowStr)
+          .filter((c: any) => {
+            if (!c.endDate) return false
+            const cleanEnd = c.endDate.trim().replace(' ', 'T')
+            const cleanNow = nowStr.trim().replace(' ', 'T')
+            const paddedEnd = cleanEnd.length === 16 ? `${cleanEnd}:00` : cleanEnd
+            const paddedNow = cleanNow.length === 16 ? `${cleanNow}:00` : cleanNow
+            try {
+              const endMs = new Date(paddedEnd).getTime()
+              const nowMs = new Date(paddedNow).getTime()
+              if (!isNaN(endMs) && !isNaN(nowMs)) return endMs >= nowMs
+            } catch {}
+            return paddedEnd >= paddedNow
+          })
           .map((c: any) => c.id)
 
         for (const id of activeCourseIds) {
@@ -682,8 +694,22 @@ export default function CursosPage() {
     )
   })
 
-  const cursosMarcados = filteredCourses.filter(c => c.endDate >= currentT)
-  const cursosFeitos = filteredCourses.filter(c => c.endDate < currentT)
+  const isDateActive = (endDateStr: string | undefined | null) => {
+    if (!endDateStr) return false
+    const cleanEnd = endDateStr.trim().replace(' ', 'T')
+    const cleanNow = (currentT || '').trim().replace(' ', 'T')
+    const paddedEnd = cleanEnd.length === 16 ? `${cleanEnd}:00` : cleanEnd
+    const paddedNow = cleanNow.length === 16 ? `${cleanNow}:00` : cleanNow
+    try {
+      const endMs = new Date(paddedEnd).getTime()
+      const nowMs = paddedNow ? new Date(paddedNow).getTime() : Date.now()
+      if (!isNaN(endMs) && !isNaN(nowMs)) return endMs >= nowMs
+    } catch {}
+    return paddedEnd >= paddedNow
+  }
+
+  const cursosMarcados = filteredCourses.filter(c => isDateActive(c.endDate))
+  const cursosFeitos = filteredCourses.filter(c => !isDateActive(c.endDate))
 
   // Calculate dynamic stats
   const totalCursosFeitos = cursosFeitos.length
@@ -848,14 +874,14 @@ export default function CursosPage() {
 
   // Status computation for "Cursos Marcados"
   const getCourseStatus = (course: Course) => {
-    const start = course.startDate
-    const end = course.endDate
-    const now = currentT
+    const start = (course.startDate || '').replace(' ', 'T')
+    const end = (course.endDate || '').replace(' ', 'T')
+    const now = (currentT || '').replace(' ', 'T')
 
-    if (now > end) {
+    if (!isDateActive(course.endDate)) {
       return { text: 'Finalizado', color: 'bg-gray-500/10 text-gray-400 border-gray-500/20' }
     }
-    if (now >= start && now <= end) {
+    if (now >= start && isDateActive(course.endDate)) {
       return { text: 'Em Andamento', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 animate-pulse' }
     }
 

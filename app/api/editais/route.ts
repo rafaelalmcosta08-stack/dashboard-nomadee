@@ -96,29 +96,37 @@ async function readEditais(): Promise<Edital[]> {
   }
 }
 
+// Safe write helper
 async function writeEditais(editais: Edital[]) {
   const admin = getAdminClient()
   if (admin) {
     try {
-      const toInsert = editais.map(e => ({
-        id: e.id,
-        title: e.title,
-        description: e.description,
-        requirements: e.requirements,
-        unidade: e.unidade,
-        link_formulario: e.linkFormulario,
-        end_date: e.endDate,
-        creator_id: e.creatorId,
-        creator_qra: e.creatorQra,
-        created_at: e.createdAt,
-        subscribers: e.subscribers || [],
-        evaluations: e.evaluations || {}
-      }))
+      if (editais.length > 0) {
+        const toInsert = editais.map(e => ({
+          id: e.id,
+          title: e.title,
+          description: e.description,
+          requirements: e.requirements,
+          unidade: e.unidade,
+          link_formulario: e.linkFormulario,
+          end_date: e.endDate,
+          creator_id: e.creatorId,
+          creator_qra: e.creatorQra,
+          created_at: e.createdAt,
+          subscribers: e.subscribers || [],
+          evaluations: e.evaluations || {}
+        }))
 
-      const ids = editais.map(e => e.id)
-      if (ids.length > 0) {
-        await admin.from('editais').delete().not('id', 'in', `(${ids.join(',')})`)
-        await admin.from('editais').upsert(toInsert)
+        const { error: upsertErr } = await admin.from('editais').upsert(toInsert)
+        if (upsertErr) {
+          console.error('Database editais upsert error:', upsertErr)
+        }
+
+        const ids = editais.map(e => `"${e.id}"`).join(',')
+        const { error: deleteErr } = await admin.from('editais').delete().not('id', 'in', `(${ids})`)
+        if (deleteErr) {
+          console.error('Database editais delete sync error:', deleteErr)
+        }
       } else {
         await admin.from('editais').delete().neq('id', 'placeholder_nonexistent')
       }
@@ -127,7 +135,11 @@ async function writeEditais(editais: Edital[]) {
     }
   }
 
-  await fs.writeFile(DATA_FILE, JSON.stringify(editais, null, 2), 'utf8')
+  try {
+    await fs.writeFile(DATA_FILE, JSON.stringify(editais, null, 2), 'utf8')
+  } catch (err) {
+    console.error('File editais write error:', err)
+  }
 }
 
 async function broadcastUpdate() {

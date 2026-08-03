@@ -211,9 +211,24 @@ export default function PainelPage() {
   // Process Cursos and Editais feed
   const currentT = brasiliaTime || getBrasiliaTimeStr()
   
+  // Helper for checking if course or edital is active
+  const isDateActive = (endDateStr: string | undefined | null) => {
+    if (!endDateStr) return false
+    const cleanEnd = endDateStr.trim().replace(' ', 'T')
+    const cleanNow = (currentT || '').trim().replace(' ', 'T')
+    const paddedEnd = cleanEnd.length === 16 ? `${cleanEnd}:00` : cleanEnd
+    const paddedNow = cleanNow.length === 16 ? `${cleanNow}:00` : cleanNow
+    try {
+      const endMs = new Date(paddedEnd).getTime()
+      const nowMs = paddedNow ? new Date(paddedNow).getTime() : Date.now()
+      if (!isNaN(endMs) && !isNaN(nowMs)) return endMs >= nowMs
+    } catch {}
+    return paddedEnd >= paddedNow
+  }
+
   // Filter and build unified Cursos and Editais feed
   const activeCoursesFeed: FeedItem[] = courses
-    .filter((c) => c.endDate >= currentT)
+    .filter((c) => isDateActive(c.endDate))
     .map((c) => ({
       id: c.id,
       type: 'curso',
@@ -226,7 +241,7 @@ export default function PainelPage() {
     }))
 
   const activeEditaisFeed: FeedItem[] = editais
-    .filter((e) => e.endDate >= currentT)
+    .filter((e) => isDateActive(e.endDate))
     .map((e) => ({
       id: e.id,
       type: 'edital',

@@ -78,20 +78,27 @@ async function writeAvisos(avisos: Aviso[]) {
   const admin = getAdminClient()
   if (admin) {
     try {
-      const toInsert = avisos.map(a => ({
-        id: a.id,
-        title: a.title,
-        content: a.content,
-        creator_id: a.creatorId,
-        creator_qra: a.creatorQra,
-        created_at: a.createdAt,
-        read_by: a.readBy || []
-      }))
+      if (avisos.length > 0) {
+        const toInsert = avisos.map(a => ({
+          id: a.id,
+          title: a.title,
+          content: a.content,
+          creator_id: a.creatorId,
+          creator_qra: a.creatorQra,
+          created_at: a.createdAt,
+          read_by: a.readBy || []
+        }))
 
-      const ids = avisos.map(a => a.id)
-      if (ids.length > 0) {
-        await admin.from('avisos').delete().not('id', 'in', `(${ids.join(',')})`)
-        await admin.from('avisos').upsert(toInsert)
+        const { error: upsertErr } = await admin.from('avisos').upsert(toInsert)
+        if (upsertErr) {
+          console.error('Database avisos upsert error:', upsertErr)
+        }
+
+        const ids = avisos.map(a => `"${a.id}"`).join(',')
+        const { error: deleteErr } = await admin.from('avisos').delete().not('id', 'in', `(${ids})`)
+        if (deleteErr) {
+          console.error('Database avisos delete sync error:', deleteErr)
+        }
       } else {
         await admin.from('avisos').delete().neq('id', 'placeholder_nonexistent')
       }
@@ -100,7 +107,11 @@ async function writeAvisos(avisos: Aviso[]) {
     }
   }
 
-  await fs.writeFile(DATA_FILE, JSON.stringify(avisos, null, 2), 'utf8')
+  try {
+    await fs.writeFile(DATA_FILE, JSON.stringify(avisos, null, 2), 'utf8')
+  } catch (err) {
+    console.error('File avisos write error:', err)
+  }
 }
 
 async function broadcastUpdate() {
