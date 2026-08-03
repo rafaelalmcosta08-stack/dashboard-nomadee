@@ -26,7 +26,7 @@ export function PainelSidebar() {
   const [isHovered, setIsHovered] = useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const { logout, profile } = useAuth()
+  const { logout, profile, isAdminLoggedIn } = useAuth()
   const { counts } = useNotifications()
   const sidebar = useSidebar()
 
@@ -71,7 +71,7 @@ export function PainelSidebar() {
     return 0
   }
 
-  const isAdmin = profile?.role === 'admin'
+  const isAdmin = profile?.role === 'admin' || isAdminLoggedIn || (profile as any)?.is_super_admin
   const isAltoComando = profile?.cargo?.includes('Alto Comando') || isAdmin
 
   const cargos = profile?.cargo || []

@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
-import { KeyRound, X, AlertTriangle, Check, Lock, Settings, Database, Info, Crown } from 'lucide-react'
+import { KeyRound, X, AlertTriangle, Check, Lock } from 'lucide-react'
 
 interface AdminLoginModalProps {
   isOpen: boolean
@@ -10,25 +10,14 @@ interface AdminLoginModalProps {
 }
 
 export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
-  const { loginAdmin, loading, supabaseUrl, supabaseKey, setSupabaseConfig } = useAuth()
+  const { loginAdmin, loading } = useAuth()
 
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
-  const [showConfig, setShowConfig] = useState(false)
-  const [inputUrl, setInputUrl] = useState(supabaseUrl)
-  const [inputKey, setInputKey] = useState(supabaseKey)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   if (!isOpen) return null
-
-  const handleSaveConfig = (e: React.FormEvent) => {
-    e.preventDefault()
-    setSupabaseConfig(inputUrl, inputKey)
-    setSuccessMsg('Configurações de API do Supabase salvas com sucesso!')
-    setShowConfig(false)
-    setTimeout(() => setSuccessMsg(null), 2500)
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -36,7 +25,7 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
     setSuccessMsg(null)
 
     if (!identifier.trim()) {
-      setErrorMsg('Digite seu E-mail ou Usuário cadastrado no Supabase.')
+      setErrorMsg('Digite seu E-mail ou Usuário cadastrado.')
       return
     }
 
@@ -75,70 +64,10 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground">Login Administrativo</h2>
-              <p className="text-xs text-muted-foreground">Autenticação de Administradores via Supabase</p>
+              <p className="text-xs text-muted-foreground">Autenticação de Administradores</p>
             </div>
           </div>
-
-          <button
-            onClick={() => setShowConfig(!showConfig)}
-            className="flex items-center gap-1.5 rounded-lg border border-border/60 bg-secondary/40 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-            title="Configurar Conexão do Supabase"
-          >
-            <Settings className="h-3.5 w-3.5" />
-            <span>API Supabase</span>
-          </button>
         </div>
-
-        {/* Informative Guidance Banner */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 text-xs text-muted-foreground leading-relaxed space-y-2">
-          <div className="flex items-center gap-2 font-bold text-foreground">
-            <Info className="h-4 w-4 text-primary" />
-            <span>Como conectar com o seu Supabase:</span>
-          </div>
-          <ul className="list-disc pl-5 space-y-1 text-[11px]">
-            <li>Crie os e-mails e senhas dos administradores no Supabase (<strong>Authentication &gt; Users &gt; Add User</strong>).</li>
-            <li><strong className="text-amber-400 flex-inline items-center gap-1"><Crown className="h-3 w-3 inline text-amber-400" /> Administrador Chefe:</strong> O primeiro usuário criado terá poder de gerenciar outros admins.</li>
-          </ul>
-        </div>
-
-        {/* Expandable Supabase Config Panel */}
-        {showConfig && (
-          <form onSubmit={handleSaveConfig} className="rounded-xl border border-border/60 bg-secondary/30 p-4 space-y-3 animate-fade-in">
-            <span className="text-xs font-mono font-bold uppercase text-primary tracking-wider flex items-center gap-1.5">
-              <Database className="h-3.5 w-3.5" />
-              Configurar Chaves da API do Supabase
-            </span>
-
-            <div>
-              <label className="block text-[10px] font-bold text-muted-foreground mb-1">SUPABASE URL</label>
-              <input
-                type="text"
-                value={inputUrl}
-                onChange={(e) => setInputUrl(e.target.value)}
-                placeholder="https://xxxxxx.supabase.co"
-                className="w-full rounded-md border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-mono outline-none focus:border-primary"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[10px] font-bold text-muted-foreground mb-1">SUPABASE PUBLISHABLE / ANON KEY</label>
-              <input
-                type="text"
-                value={inputKey}
-                onChange={(e) => setInputKey(e.target.value)}
-                placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..."
-                className="w-full rounded-md border border-border/60 bg-background/60 px-3 py-1.5 text-xs font-mono outline-none focus:border-primary"
-              />
-            </div>
-
-            <button
-              type="submit"
-              className="w-full rounded-md bg-foreground py-2 text-xs font-bold text-background hover:bg-foreground/90 transition-colors cursor-pointer"
-            >
-              Salvar Credenciais do Supabase
-            </button>
-          </form>
-        )}
 
         {/* Error Alert */}
         {errorMsg && (
@@ -160,7 +89,7 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-              E-mail ou Usuário Supabase *
+              E-mail ou Usuário *
             </label>
             <input
               type="text"
@@ -201,3 +130,4 @@ export function AdminLoginModal({ isOpen, onClose }: AdminLoginModalProps) {
     </div>
   )
 }
+

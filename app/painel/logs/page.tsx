@@ -27,7 +27,8 @@ import {
 
 interface AuditLog {
   id: string
-  timestamp: string
+  timestamp?: string
+  createdAt?: string
   whoId: string
   whoQra: string
   action: string
@@ -36,7 +37,7 @@ interface AuditLog {
 }
 
 export default function LogsPage() {
-  const { session, profile: myProfile } = useAuth()
+  const { session, profile: myProfile, isAdminLoggedIn } = useAuth()
   const router = useRouter()
 
   const [logs, setLogs] = useState<AuditLog[]>([])
@@ -49,23 +50,23 @@ export default function LogsPage() {
 
   // Authorization Check
   const cargos = myProfile?.cargo ?? []
-  const isAltoComando = cargos.includes('Alto Comando') || myProfile?.role === 'admin'
+  const isAltoComando = cargos.includes('Alto Comando') || myProfile?.role === 'admin' || isAdminLoggedIn
 
   const fetchLogs = async () => {
-    if (!session) return
     setLoading(true)
     setErrorMsg('')
     try {
-      const response = await fetch('/api/audit-logs', {
-        headers: {
-          Authorization: `Bearer ${session?.access_token}`
-        }
-      })
+      const headers: Record<string, string> = {}
+      if (session?.access_token) {
+        headers['Authorization'] = `Bearer ${session.access_token}`
+      }
+
+      const response = await fetch('/api/audit-logs', { headers })
       const data = await response.json()
       if (response.ok && data.success) {
         // Sort logs descending (latest first)
         const sortedLogs = (data.logs || []).sort(
-          (a: AuditLog, b: AuditLog) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
+          (a: AuditLog, b: AuditLog) => new Date(b.timestamp || b.createdAt || 0).getTime() - new Date(a.timestamp || a.createdAt || 0).getTime()
         )
         setLogs(sortedLogs)
       } else {
@@ -81,7 +82,7 @@ export default function LogsPage() {
 
   useEffect(() => {
     fetchLogs()
-  }, [])
+  }, [session, isAdminLoggedIn])
 
   if (loading && logs.length === 0) {
     return (
@@ -283,7 +284,7 @@ export default function LogsPage() {
                     <tr key={log.id} className="hover:bg-secondary/15 transition-colors">
                       <td className="py-3.5 px-4 text-muted-foreground flex items-center gap-1.5 whitespace-nowrap">
                         <Clock className="h-3 w-3 text-muted-foreground/60 shrink-0" />
-                        {new Date(log.timestamp).toLocaleString('pt-BR')}
+                        {new Date(log.timestamp || log.createdAt || Date.now()).toLocaleString('pt-BR')}
                       </td>
                       <td className="py-3.5 px-3 font-bold text-foreground/90 whitespace-nowrap">
                         <span className="inline-flex items-center">

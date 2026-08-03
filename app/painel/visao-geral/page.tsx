@@ -85,7 +85,7 @@ interface Edital {
 }
 
 export default function VisaoGeralPage() {
-  const { session, profile: myProfile } = useAuth()
+  const { session, profile: myProfile, isAdminLoggedIn } = useAuth()
   const router = useRouter()
   
   const [usuarios, setUsuarios] = useState<UserProfile[]>([])
@@ -106,16 +106,16 @@ export default function VisaoGeralPage() {
 
   // Authorization Check
   const cargos = myProfile?.cargo ?? []
-  const isAltoComando = cargos.includes('Alto Comando') || myProfile?.role === 'admin'
+  const isAltoComando = cargos.includes('Alto Comando') || myProfile?.role === 'admin' || isAdminLoggedIn || (myProfile as any)?.is_super_admin
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const response = await fetch('/api/admin/visao-geral', {
-          headers: {
-            Authorization: `Bearer ${session?.access_token || ''}`
-          }
-        })
+        const headers: Record<string, string> = {}
+        if (session?.access_token) {
+          headers['Authorization'] = `Bearer ${session.access_token}`
+        }
+        const response = await fetch('/api/admin/visao-geral', { headers })
         const data = await response.json()
         if (response.ok && data.success) {
           setUsuarios(data.usuarios || [])
@@ -133,7 +133,7 @@ export default function VisaoGeralPage() {
     }
 
     fetchData()
-  }, [session])
+  }, [session, isAdminLoggedIn])
 
   if (loading) {
     return (

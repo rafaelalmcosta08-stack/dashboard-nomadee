@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Megaphone, ShieldAlert, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default function PublicarAvisoPage() {
-  const { profile, session } = useAuth()
+  const { profile, session, isAdminLoggedIn } = useAuth()
   const router = useRouter()
 
   const [title, setTitle] = useState('')
@@ -16,7 +16,7 @@ export default function PublicarAvisoPage() {
   const [success, setSuccess] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  const isAltoComando = profile?.cargo?.includes('Alto Comando') || profile?.role === 'admin'
+  const isAltoComando = profile?.cargo?.includes('Alto Comando') || profile?.role === 'admin' || isAdminLoggedIn || (profile as any)?.is_super_admin
 
   if (!profile) {
     return (

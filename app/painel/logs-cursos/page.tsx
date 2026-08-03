@@ -52,7 +52,7 @@ interface Course {
 }
 
 export default function LogsCursosPage() {
-  const { session, profile: myProfile } = useAuth()
+  const { session, profile: myProfile, isAdminLoggedIn } = useAuth()
   const router = useRouter()
 
   const [courses, setCourses] = useState<Course[]>([])
@@ -62,7 +62,7 @@ export default function LogsCursosPage() {
   const [expandedCourseId, setExpandedCourseId] = useState<string | null>(null)
 
   const cargos = myProfile?.cargo ?? []
-  const isAltoComando = cargos.includes('Alto Comando') || myProfile?.role === 'admin'
+  const isAltoComando = cargos.includes('Alto Comando') || myProfile?.role === 'admin' || isAdminLoggedIn
 
   const fetchCourses = async () => {
     setLoading(true)

@@ -49,7 +49,7 @@ export interface Edital {
 }
 
 export default function EditaisPage() {
-  const { user, profile, session } = useAuth()
+  const { user, profile, session, isAdminLoggedIn } = useAuth()
   const [editais, setEditais] = useState<Edital[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -108,7 +108,7 @@ export default function EditaisPage() {
 
   // Check Permissions
   const myCargos = profile?.cargo ?? []
-  const isSiteAdmin = profile?.role === 'admin'
+  const isSiteAdmin = profile?.role === 'admin' || isAdminLoggedIn || (profile as any)?.is_super_admin
   const isAllPowerfulEditalPublisher =
     isSiteAdmin ||
     myCargos.includes('Alto Comando') ||
@@ -572,13 +572,32 @@ export default function EditaisPage() {
   // Title search filter state
   const [searchTitle, setSearchTitle] = useState('')
 
+  // Check URL query parameters for search query (q or search)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const q = params.get('q') || params.get('search')
+      if (q) {
+        setSearchTitle(q)
+      }
+    }
+  }, [])
+
   const currentT = brasiliaTime || getBrasiliaTimeStr()
 
+  const normalizeStr = (str: string) =>
+    str ? str.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase() : ''
+
   const filteredEditais = editais.filter(e => {
-    if (searchTitle.trim()) {
-      return e.title.toLowerCase().includes(searchTitle.toLowerCase().trim())
-    }
-    return true
+    if (!searchTitle.trim()) return true
+    const query = normalizeStr(searchTitle.trim())
+    return (
+      normalizeStr(e.title).includes(query) ||
+      normalizeStr(e.description).includes(query) ||
+      normalizeStr(e.requirements || '').includes(query) ||
+      normalizeStr(e.unidade).includes(query) ||
+      normalizeStr(e.creatorQra).includes(query)
+    )
   })
 
   const editaisAbertos = filteredEditais.filter(e => e.endDate >= currentT)
@@ -738,14 +757,46 @@ export default function EditaisPage() {
                 </div>
               </div>
 
-              {/* SECTION: EDITAIS ABERTOS */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between border-b border-border/40 pb-2">
-                  <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
-                    <CheckCircle className="h-4 w-4 text-emerald-400" />
-                    Editais Abertos ({editaisAbertos.length})
-                  </h2>
+              {/* Active Search Notification Banner */}
+              {searchTitle.trim() !== '' && (
+                <div className="flex items-center justify-between rounded-xl bg-primary/10 border border-primary/25 p-3.5 text-xs">
+                  <span className="font-semibold text-foreground flex items-center gap-2">
+                    <Search className="h-4 w-4 text-primary shrink-0" />
+                    Exibindo resultados para "<strong>{searchTitle}</strong>" ({filteredEditais.length} edital{filteredEditais.length !== 1 ? 'is' : ''} encontrado{filteredEditais.length !== 1 ? 's' : ''})
+                  </span>
+                  <button
+                    onClick={() => setSearchTitle('')}
+                    className="text-[11px] font-bold text-primary hover:underline cursor-pointer shrink-0"
+                  >
+                    Limpar busca
+                  </button>
                 </div>
+              )}
+
+              {searchTitle.trim() !== '' && filteredEditais.length === 0 ? (
+                <div className="rounded-xl border border-dashed border-border/60 p-8 text-center bg-card/10">
+                  <Search className="mx-auto h-8 w-8 text-muted-foreground/50" />
+                  <p className="mt-3 text-sm font-semibold text-foreground">Nenhum edital encontrado</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Não encontramos nenhum edital com o termo "{searchTitle}". Tente buscar por outro título, palavra-chave ou unidade.
+                  </p>
+                  <button
+                    onClick={() => setSearchTitle('')}
+                    className="mt-4 rounded-lg bg-secondary px-3.5 py-2 text-xs font-bold text-foreground hover:bg-secondary/80 cursor-pointer"
+                  >
+                    Limpar Filtro de Busca
+                  </button>
+                </div>
+              ) : (
+                <>
+                  {/* SECTION: EDITAIS ABERTOS */}
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-border/40 pb-2">
+                      <h2 className="text-sm font-bold text-foreground uppercase tracking-wider flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4 text-emerald-400" />
+                        Editais Abertos ({editaisAbertos.length})
+                      </h2>
+                    </div>
 
                 {editaisAbertos.length === 0 ? (
                   <div className="rounded-xl border border-dashed border-border/60 p-8 text-center bg-card/10">
@@ -1105,6 +1156,8 @@ export default function EditaisPage() {
                   </div>
                 )}
               </div>
+            </>
+          )}
 
             </div>
           )}

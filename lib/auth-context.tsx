@@ -131,6 +131,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const isSuper = session.user.user_metadata?.is_super_admin ?? true
           setIsSuperAdmin(isSuper)
           localStorage.setItem('nomade_is_super_admin', String(isSuper))
+
+          // Stamp user_metadata if admin role or cargo is missing in Supabase
+          if (!session.user.user_metadata?.role || session.user.user_metadata?.role !== 'admin' || !session.user.user_metadata?.cargo) {
+            client.auth.updateUser({
+              data: {
+                role: 'admin',
+                is_super_admin: isSuper,
+                adminRole: isSuper ? 'super_admin' : 'admin',
+                cargo: ['Alto Comando', 'Comando Bope', 'Diretor APM'],
+                status: 'aprovado'
+              }
+            }).catch(() => {})
+          }
         }
       })
 
@@ -233,6 +246,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setIsSuperAdmin(superRole)
       localStorage.setItem('nomade_is_super_admin', String(superRole))
+
+      // Update Supabase user_metadata to grant admin role & Alto Comando cargo
+      await client.auth.updateUser({
+        data: {
+          role: 'admin',
+          is_super_admin: superRole,
+          adminRole: superRole ? 'super_admin' : 'admin',
+          cargo: ['Alto Comando', 'Comando Bope', 'Diretor APM'],
+          status: 'aprovado'
+        }
+      }).catch(() => {})
 
       if (data.user.email) {
         const qraFromEmail = data.user.email.split('@')[0]
