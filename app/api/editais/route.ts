@@ -27,6 +27,7 @@ export interface Edital {
     userId: string
     qra: string
     username: string
+    passaporte?: string
     subscribedAt: string
   }>
   evaluations?: Record<string, {

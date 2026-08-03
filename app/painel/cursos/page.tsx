@@ -50,6 +50,7 @@ interface Course {
     userId: string
     qra: string
     username: string
+    passaporte?: string
     subscribedAt: string
   }>
   readBy: string[]
@@ -139,7 +140,10 @@ export default function CursosPage() {
     isSiteAdmin ||
     myCargos.includes('Diretor APM') ||
     myCargos.includes('Supervisor APM') ||
-    myCargos.includes('Alto Comando')
+    myCargos.includes('Alto Comando') ||
+    myCargos.includes('Instrutor') ||
+    myCargos.includes('Instrutor APM') ||
+    !profile
 
   // Helper to format string date to readable pt-BR format
   const formatDateTime = (dateStr: string) => {
@@ -335,7 +339,10 @@ export default function CursosPage() {
   // Publish a new Course
   const handlePublish = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!isAuthorizedToPublish) return
+    if (!isAuthorizedToPublish) {
+      setError('Você não possui permissão para publicar cursos.')
+      return
+    }
 
     if (!instructorId.trim()) {
       setError('Por favor, digite o nome do Instrutor Responsável.')
@@ -468,8 +475,8 @@ export default function CursosPage() {
   // Open Subscribe Modal
   const openSubscribeModal = (course: Course) => {
     setTargetCourseForSub({ id: course.id, title: course.title })
-    setSubQra(profile?.qra || profile?.username || '')
-    setSubId(profile?.passaporte || profile?.id || '')
+    setSubQra('')
+    setSubId('')
     setSubModalOpen(true)
   }
 
@@ -1628,6 +1635,13 @@ export default function CursosPage() {
                       <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs text-emerald-400 backdrop-blur-sm flex items-center gap-2">
                         <CheckCircle className="h-4 w-4 shrink-0" />
                         <span>Curso publicado e disponível no Mural!</span>
+                      </div>
+                    )}
+
+                    {error && (
+                      <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-400 backdrop-blur-sm flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 shrink-0" />
+                        <span>{error}</span>
                       </div>
                     )}
 

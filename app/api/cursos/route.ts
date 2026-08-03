@@ -30,6 +30,7 @@ export interface Course {
     userId: string
     qra: string
     username: string
+    passaporte?: string
     subscribedAt: string
   }>
   readBy: string[]
@@ -205,7 +206,10 @@ export async function POST(req: NextRequest) {
     requesterMeta.adminRole === 'admin' ||
     myCargos.includes('Diretor APM') ||
     myCargos.includes('Supervisor APM') ||
-    myCargos.includes('Alto Comando')
+    myCargos.includes('Alto Comando') ||
+    myCargos.includes('Instrutor') ||
+    myCargos.includes('Instrutor APM') ||
+    requester.id === 'admin-master'
 
   const courses = await readCourses()
 

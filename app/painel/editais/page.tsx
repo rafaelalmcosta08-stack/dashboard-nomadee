@@ -38,6 +38,7 @@ export interface Edital {
     userId: string
     qra: string
     username: string
+    passaporte?: string
     subscribedAt: string
   }>
   evaluations?: Record<string, {
@@ -456,8 +457,8 @@ export default function EditaisPage() {
   // Open Subscribe Modal (Inscrever-se com QRA e ID)
   const openSubscribeModal = (id: string, titleStr: string) => {
     setTargetEditalForSub({ id, title: titleStr })
-    setSubQra(profile?.qra || profile?.username || '')
-    setSubId(profile?.passaporte || profile?.id || '')
+    setSubQra('')
+    setSubId('')
     setSubModalOpen(true)
   }
 
