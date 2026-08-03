@@ -381,7 +381,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'subscribe') {
-    const { id } = body
+    const { id, qra: customQra, passaporte: customPassaporte, userProvidedId } = body
     const course = courses.find(c => c.id === id)
     if (!course) {
       return NextResponse.json({ error: 'Curso não encontrado.' }, { status: 404 })
@@ -413,9 +413,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'As vagas para este curso já estão esgotadas.' }, { status: 400 })
     }
 
+    const finalQra = customQra && String(customQra).trim() ? String(customQra).trim() : (requesterMeta.qra || requesterMeta.username || 'Oficial')
+    const finalPassaporte = customPassaporte || userProvidedId ? String(customPassaporte || userProvidedId).trim() : (requesterMeta.passaporte || '')
+
     course.subscribers.push({
       userId: requester.id,
-      qra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+      qra: finalQra,
+      passaporte: finalPassaporte,
       username: requesterMeta.username || '',
       subscribedAt: new Date().toISOString()
     })

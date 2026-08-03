@@ -104,6 +104,13 @@ export default function EditaisPage() {
   // Confirmation notice popup on subscription
   const [subscriptionNotice, setSubscriptionNotice] = useState<string | null>(null)
 
+  // Subscription Modal State (QRA & ID)
+  const [subModalOpen, setSubModalOpen] = useState(false)
+  const [targetEditalForSub, setTargetEditalForSub] = useState<{ id: string; title: string } | null>(null)
+  const [subQra, setSubQra] = useState('')
+  const [subId, setSubId] = useState('')
+  const [submittingSub, setSubmittingSub] = useState(false)
+
   const sidebarFormRef = useRef<HTMLDivElement>(null)
 
   // Check Permissions
@@ -446,8 +453,23 @@ export default function EditaisPage() {
     }
   }
 
-  // Subscribe to Edital (Inscrever-se)
-  const handleSubscribe = async (id: string, titleStr: string) => {
+  // Open Subscribe Modal (Inscrever-se com QRA e ID)
+  const openSubscribeModal = (id: string, titleStr: string) => {
+    setTargetEditalForSub({ id, title: titleStr })
+    setSubQra(profile?.qra || profile?.username || '')
+    setSubId(profile?.passaporte || profile?.id || '')
+    setSubModalOpen(true)
+  }
+
+  const confirmSubscribeEdital = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!targetEditalForSub) return
+    if (!subQra.trim() || !subId.trim()) {
+      alert('Por favor, digite seu QRA e seu ID para confirmar a inscrição.')
+      return
+    }
+
+    setSubmittingSub(true)
     setError(null)
     setSuccessMessage(null)
 
@@ -460,18 +482,23 @@ export default function EditaisPage() {
         },
         body: JSON.stringify({
           action: 'subscribe',
-          id,
+          id: targetEditalForSub.id,
+          qra: subQra.trim(),
+          passaporte: subId.trim(),
         }),
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Falha ao se inscrever.')
 
-      // Display warning notice confirming inscription
-      setSubscriptionNotice(titleStr)
+      setSubscriptionNotice(targetEditalForSub.title)
+      setSubModalOpen(false)
+      setTargetEditalForSub(null)
       fetchEditais()
     } catch (err: any) {
-      setError(err.message)
+      alert(err.message)
+    } finally {
+      setSubmittingSub(false)
     }
   }
 
@@ -928,9 +955,12 @@ export default function EditaisPage() {
                                   <span
                                     key={sub.userId}
                                     title={`Inscrito em: ${new Date(sub.subscribedAt).toLocaleString('pt-BR')}`}
-                                    className="rounded bg-secondary/35 px-2 py-0.5 border border-border/40 text-foreground font-medium"
+                                    className="rounded bg-secondary/35 px-2 py-0.5 border border-border/40 text-foreground font-medium flex items-center gap-1"
                                   >
-                                    {sub.qra || sub.username}
+                                    <span>{sub.qra || sub.username}</span>
+                                    {sub.passaporte && (
+                                      <span className="text-[10px] text-muted-foreground font-mono">(ID: {sub.passaporte})</span>
+                                    )}
                                   </span>
                                 ))}
                               </div>
@@ -959,7 +989,7 @@ export default function EditaisPage() {
                               </div>
                             ) : (
                               <button
-                                onClick={() => handleSubscribe(edital.id, edital.title)}
+                                onClick={() => openSubscribeModal(edital.id, edital.title)}
                                 className="w-full sm:w-auto rounded-lg bg-primary px-3.5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all flex items-center justify-center gap-1 cursor-pointer"
                               >
                                 <UserCheck className="h-4 w-4" />
@@ -1504,9 +1534,16 @@ export default function EditaisPage() {
                           return (
                             <div key={sub.userId} className={`pt-4 ${idx === 0 ? 'pt-0 border-t-0' : 'border-t border-border/40'} space-y-3`}>
                               <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs text-foreground pr-10 truncate" title={sub.qra || sub.username}>
-                                  {sub.qra || sub.username}
-                                </span>
+                                <div className="flex items-center gap-1.5 pr-10 min-w-0 truncate" title={sub.qra || sub.username}>
+                                  <span className="font-bold text-xs text-foreground truncate">
+                                    {sub.qra || sub.username}
+                                  </span>
+                                  {sub.passaporte && (
+                                    <span className="font-mono text-[10px] text-primary/90 bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded font-semibold shrink-0">
+                                      ID: {sub.passaporte}
+                                    </span>
+                                  )}
+                                </div>
                                 
                                 {statusMsg && (
                                   <span className={`text-[10px] font-semibold ${
@@ -1575,6 +1612,73 @@ export default function EditaisPage() {
         )}
 
       </div>
+
+      {/* MODAL DE INSCRIÇÃO COM QRA E ID */}
+      {subModalOpen && targetEditalForSub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-border/80 bg-card p-6 shadow-2xl space-y-5 relative">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-primary" />
+                Inscrição no Edital
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Confirme suas informações para se inscrever no edital <strong className="text-foreground">{targetEditalForSub.title}</strong>.
+              </p>
+            </div>
+
+            <form onSubmit={confirmSubscribeEdital} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
+                  Digite seu QRA *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Sd. Silva"
+                  value={subQra}
+                  onChange={(e) => setSubQra(e.target.value)}
+                  className="w-full rounded-lg border border-border/80 bg-background px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
+                  Digite seu ID / Passaporte *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: 1024"
+                  value={subId}
+                  onChange={(e) => setSubId(e.target.value)}
+                  className="w-full rounded-lg border border-border/80 bg-background px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubModalOpen(false)
+                    setTargetEditalForSub(null)
+                  }}
+                  className="rounded-lg bg-secondary px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingSub}
+                  className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                >
+                  {submittingSub ? 'Inscrevendo...' : 'Confirmar Inscrição'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

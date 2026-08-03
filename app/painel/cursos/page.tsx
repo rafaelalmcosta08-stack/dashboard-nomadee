@@ -98,6 +98,13 @@ export default function CursosPage() {
   // Unit filter preference state
   const [unitFilter, setUnitFilter] = useState<'Todos' | 'Minha Unidade'>('Todos')
 
+  // Subscription Modal State (QRA & ID)
+  const [subModalOpen, setSubModalOpen] = useState(false)
+  const [targetCourseForSub, setTargetCourseForSub] = useState<{ id: string; title: string } | null>(null)
+  const [subQra, setSubQra] = useState('')
+  const [subId, setSubId] = useState('')
+  const [submittingSub, setSubmittingSub] = useState(false)
+
   // Load preferred filter on mount
   useEffect(() => {
     const saved = localStorage.getItem('pref-unit-filter-cursos')
@@ -458,8 +465,23 @@ export default function CursosPage() {
     }
   }
 
-  // Subscribe to a Course
-  const handleSubscribe = async (id: string) => {
+  // Open Subscribe Modal
+  const openSubscribeModal = (course: Course) => {
+    setTargetCourseForSub({ id: course.id, title: course.title })
+    setSubQra(profile?.qra || profile?.username || '')
+    setSubId(profile?.passaporte || profile?.id || '')
+    setSubModalOpen(true)
+  }
+
+  const confirmSubscribeCourse = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault()
+    if (!targetCourseForSub) return
+    if (!subQra.trim() || !subId.trim()) {
+      alert('Por favor, digite seu QRA e seu ID para confirmar a inscrição.')
+      return
+    }
+
+    setSubmittingSub(true)
     try {
       const res = await fetch('/api/cursos', {
         method: 'POST',
@@ -469,16 +491,22 @@ export default function CursosPage() {
         },
         body: JSON.stringify({
           action: 'subscribe',
-          id,
+          id: targetCourseForSub.id,
+          qra: subQra.trim(),
+          passaporte: subId.trim(),
         }),
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erro ao inscrever-se.')
 
+      setSubModalOpen(false)
+      setTargetCourseForSub(null)
       fetchCourses()
     } catch (err: any) {
       alert(err.message)
+    } finally {
+      setSubmittingSub(false)
     }
   }
 
@@ -1225,7 +1253,7 @@ export default function CursosPage() {
                                   </button>
                                 ) : (
                                   <button
-                                    onClick={() => handleSubscribe(course.id)}
+                                    onClick={() => openSubscribeModal(course)}
                                     disabled={isVagasFull}
                                     className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all cursor-pointer ${
                                       isVagasFull
@@ -1303,9 +1331,12 @@ export default function CursosPage() {
                                           {course.subscribers.map((subscriber) => (
                                             <span
                                               key={subscriber.userId}
-                                              className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground/85 shadow-sm"
+                                              className="inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-semibold text-foreground/85 shadow-sm"
                                             >
-                                              {subscriber.qra}
+                                              <span>{subscriber.qra}</span>
+                                              {subscriber.passaporte && (
+                                                <span className="text-[10px] text-muted-foreground font-mono font-normal">(ID: {subscriber.passaporte})</span>
+                                              )}
                                             </span>
                                           ))}
                                         </div>
@@ -1458,8 +1489,11 @@ export default function CursosPage() {
                                                 key={subscriber.userId}
                                                 className="flex items-center justify-between rounded border border-border/40 bg-card p-2 text-xs"
                                               >
-                                                <span className="font-semibold text-foreground/95">
-                                                  {subscriber.qra}
+                                                <span className="font-semibold text-foreground/95 flex items-center gap-1">
+                                                  <span>{subscriber.qra}</span>
+                                                  {subscriber.passaporte && (
+                                                    <span className="text-[10px] text-muted-foreground font-mono font-normal">(ID: {subscriber.passaporte})</span>
+                                                  )}
                                                 </span>
                                                 {evaluation ? (
                                                   <div className="flex items-center gap-1.5">
@@ -1801,7 +1835,14 @@ export default function CursosPage() {
                                   className="p-3 rounded-lg border border-border/80 bg-background/40 space-y-2.5 shadow-xs"
                                 >
                                   <div className="flex items-center justify-between">
-                                    <span className="font-bold text-xs text-foreground/90">{subscriber.qra}</span>
+                                    <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                      <span className="font-bold text-xs text-foreground/90 truncate">{subscriber.qra}</span>
+                                      {subscriber.passaporte && (
+                                        <span className="font-mono text-[10px] text-primary/90 bg-primary/10 border border-primary/20 px-1.5 py-0.5 rounded font-semibold shrink-0">
+                                          ID: {subscriber.passaporte}
+                                        </span>
+                                      )}
+                                    </div>
                                     {statusText && (
                                       <span className={`text-[10px] font-medium ${
                                         statusText === 'Salvo!' ? 'text-emerald-400' : 'text-muted-foreground animate-pulse'
@@ -1879,6 +1920,73 @@ export default function CursosPage() {
         )}
 
       </div>
+
+      {/* MODAL DE INSCRIÇÃO COM QRA E ID */}
+      {subModalOpen && targetCourseForSub && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-xs p-4 animate-fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-border/80 bg-card p-6 shadow-2xl space-y-5 relative">
+            <div>
+              <h3 className="text-base font-bold text-foreground flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-primary" />
+                Inscrição no Curso
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Confirme suas informações para se inscrever no curso <strong className="text-foreground">{targetCourseForSub.title}</strong>.
+              </p>
+            </div>
+
+            <form onSubmit={confirmSubscribeCourse} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
+                  Digite seu QRA *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Sd. Silva"
+                  value={subQra}
+                  onChange={(e) => setSubQra(e.target.value)}
+                  className="w-full rounded-lg border border-border/80 bg-background px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-foreground uppercase tracking-wider mb-1">
+                  Digite seu ID / Passaporte *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: 1024"
+                  value={subId}
+                  onChange={(e) => setSubId(e.target.value)}
+                  className="w-full rounded-lg border border-border/80 bg-background px-3.5 py-2 text-sm text-foreground outline-none focus:border-primary focus:ring-1 focus:ring-primary font-mono"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-border/40">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSubModalOpen(false)
+                    setTargetCourseForSub(null)
+                  }}
+                  className="rounded-lg bg-secondary px-4 py-2 text-xs font-bold text-muted-foreground hover:text-foreground transition-all cursor-pointer"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={submittingSub}
+                  className="rounded-lg bg-primary px-5 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all disabled:opacity-50 cursor-pointer flex items-center gap-1.5"
+                >
+                  {submittingSub ? 'Inscrevendo...' : 'Confirmar Inscrição'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </main>
   )
 }

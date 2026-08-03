@@ -429,7 +429,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (action === 'subscribe') {
-    const { id } = body
+    const { id, qra: customQra, passaporte: customPassaporte, userProvidedId } = body
     const edital = editais.find(e => e.id === id)
     if (!edital) {
       return NextResponse.json({ error: 'Edital não encontrado.' }, { status: 404 })
@@ -444,9 +444,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Você já está inscrito neste edital.' }, { status: 400 })
     }
 
+    const finalQra = customQra && String(customQra).trim() ? String(customQra).trim() : (requesterMeta.qra || requesterMeta.username || 'Oficial')
+    const finalPassaporte = customPassaporte || userProvidedId ? String(customPassaporte || userProvidedId).trim() : (requesterMeta.passaporte || '')
+
     edital.subscribers.push({
       userId: requester.id,
-      qra: requesterMeta.qra || requesterMeta.username || 'Oficial',
+      qra: finalQra,
+      passaporte: finalPassaporte,
       username: requesterMeta.username || '',
       subscribedAt: new Date().toISOString()
     })
