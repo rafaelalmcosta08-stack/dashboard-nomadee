@@ -1,0 +1,34 @@
+'use client'
+
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/lib/auth-context'
+import { PainelHeader } from '@/components/painel-header'
+import { PainelSidebar } from '@/components/painel-sidebar'
+import { FuturisticLoader } from '@/components/futuristic-loader'
+import { NotificationProvider } from '@/lib/notification-context'
+import { SidebarProvider } from '@/lib/sidebar-context'
+
+export default function PainelLayout({ children }: { children: React.ReactNode }) {
+  const { user, profile, loading } = useAuth()
+  const router = useRouter()
+
+  if (loading) {
+    return <FuturisticLoader />
+  }
+
+  return (
+    <SidebarProvider>
+      <NotificationProvider>
+        <div className="min-h-screen bg-transparent text-foreground">
+          <PainelSidebar />
+          <div className="relative flex min-h-screen flex-col pl-0 md:pl-[70px]">
+            <PainelHeader />
+            <div className="flex-1 pt-24 px-4 sm:px-6 md:px-10 pb-12">{children}</div>
+          </div>
+        </div>
+      </NotificationProvider>
+    </SidebarProvider>
+  )
+}
+

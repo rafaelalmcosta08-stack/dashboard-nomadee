@@ -1,0 +1,292 @@
+'use client'
+
+import { useState, useEffect, useRef } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import Link from 'next/link'
+import { useAuth } from '@/lib/auth-context'
+import { useNotifications } from '@/lib/notification-context'
+import { useSidebar } from '@/lib/sidebar-context'
+import { motion, AnimatePresence } from 'motion/react'
+import {
+  Shirt,
+  Crosshair,
+  Award,
+  GraduationCap,
+  FileText,
+  LogOut,
+  Megaphone,
+  Home,
+  Car,
+  Activity,
+  Shield,
+  ChevronDown,
+} from 'lucide-react'
+
+export function PainelSidebar() {
+  const [isHovered, setIsHovered] = useState(false)
+  const pathname = usePathname()
+  const router = useRouter()
+  const { logout, profile } = useAuth()
+  const { counts } = useNotifications()
+  const sidebar = useSidebar()
+
+  const isExpanded = isHovered || sidebar.isOpen
+
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [showArrow, setShowArrow] = useState(false)
+
+  const checkScroll = () => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const hasOverflow = el.scrollHeight > el.clientHeight
+    const isAtBottom = el.scrollHeight - el.scrollTop <= el.clientHeight + 4 // 4px margin of error
+    setShowArrow(hasOverflow && !isAtBottom)
+  }
+
+  useEffect(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+
+    checkScroll()
+
+    const observer = new ResizeObserver(() => {
+      checkScroll()
+    })
+    observer.observe(el)
+
+    return () => {
+      observer.disconnect()
+    }
+  }, [isExpanded])
+
+  const getBadgeCount = (href: string): number => {
+    if (href === '/painel') return counts.avisos
+    if (href === '/painel/cursos') return counts.cursos
+    if (href === '/painel/editais') return counts.editais
+    if (href === '/painel/chat/apm') return counts.chat_apm
+    if (href === '/painel/chat/alto-comando') return counts.chat_alto_comando
+    if (href === '/painel/registro-unidade') return counts.registro_unidade
+    if (href === '/painel/punicoes') return counts.corregedoria
+    if (href === '/painel/administracao') return counts.administracao
+    return 0
+  }
+
+  const isAdmin = profile?.role === 'admin'
+  const isAltoComando = profile?.cargo?.includes('Alto Comando') || isAdmin
+
+  const cargos = profile?.cargo || []
+  const hasApmAccess = isAdmin || cargos.some((c) =>
+    ['Instrutor Treinamento Operacional', 'Instrutor De Cursos e Recrutamentos', 'Supervisor APM', 'Diretor APM', 'Alto Comando'].includes(c)
+  )
+
+  const isRequester = cargos.some((c) =>
+    ['Comando Bope', 'Comando BOPE', 'Comando Choque', 'Comando CHOQUE', 'Comando Core', 'Comando GRR', 'Comando GAR', 'Comando GRAER', 'Comando GAEP', 'Comando ROCAM', 'Comando GTM', 'Diretor APM', 'Diretor DPJM', 'Diretor Corregedoria'].includes(c)
+  )
+  const hasRegistroUnidadesAccess = isAltoComando || isRequester
+
+  const unidade = profile?.unidade_operacional || ''
+
+  const categories = [
+    {
+      title: 'Informação Policial',
+      items: [
+        { label: 'Avisos Gerais', href: '/painel', icon: Megaphone, visible: true },
+        { label: 'Fardamento', href: '/painel/fardamento', icon: Shirt, visible: true },
+        { label: 'Armamento', href: '/painel/armamento', icon: Crosshair, visible: true },
+        { label: 'Viatura', href: '/painel/viatura', icon: Car, visible: true },
+      ]
+    },
+    {
+      title: 'Formação Policial',
+      items: [
+        { label: 'Cursos', href: '/painel/cursos', icon: GraduationCap, visible: true },
+        { label: 'Editais', href: '/painel/editais', icon: FileText, visible: true },
+      ]
+    },
+    {
+      title: 'Alto Comando',
+      items: [
+        { label: 'Publicar Aviso', href: '/painel/publicar-aviso', icon: Megaphone, visible: isAltoComando },
+      ]
+    },
+    {
+      title: 'Administração do Site',
+      items: [
+        { label: 'Visão Geral', href: '/painel/visao-geral', icon: Activity, visible: isAltoComando },
+        { label: 'Logs', href: '/painel/logs', icon: FileText, visible: isAltoComando },
+        { label: 'Logs Cursos', href: '/painel/logs-cursos', icon: GraduationCap, visible: isAltoComando },
+        { label: 'Administração', href: '/painel/administracao', icon: Shield, visible: true }
+      ]
+    }
+  ]
+
+  const visibleCategories = categories
+    .map((cat) => ({
+      ...cat,
+      items: cat.items.filter((item) => item.visible)
+    }))
+    .filter((cat) => cat.items.length > 0)
+
+  async function handleLogout() {
+    await logout()
+    router.push('/')
+  }
+
+  return (
+    <>
+      {/* Mobile Sidebar Backdrop Overlay */}
+      {sidebar.isOpen && (
+        <div
+          className="fixed inset-0 z-45 bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={sidebar.close}
+        />
+      )}
+
+      <aside
+        id="painel-sidebar"
+        className={`fixed bottom-0 top-0 z-50 flex h-screen flex-col justify-between border-r border-border/20 bg-card/75 py-6 backdrop-blur-md transition-all duration-300 ease-in-out ${
+          sidebar.isOpen ? 'left-0' : '-translate-x-full md:translate-x-0 md:left-0'
+        } ${
+          isExpanded ? 'w-64 shadow-2xl shadow-black/40' : 'w-0 md:w-[70px] overflow-hidden md:overflow-visible'
+        }`}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        {/* Top: Logo / Badge */}
+        <div className="flex flex-col min-h-0 flex-1">
+          <Link
+            href="/painel"
+            onClick={sidebar.close}
+            className="flex items-center px-4 mb-6 outline-none shrink-0"
+            title="Nômade - Assistente Virtual"
+          >
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg overflow-hidden bg-transparent">
+              <img
+                src="https://res.cloudinary.com/epo1w9hl/image/upload/v1785631357/BPM_LOGO_eo17qx.png"
+                alt="Nômade Logo"
+                className="h-10 w-10 object-contain hover:scale-110 transition-transform duration-300"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <span
+              className={`ml-3 text-sm font-bold tracking-tight text-foreground transition-all duration-300 ${
+                isExpanded ? 'opacity-100 translate-x-0' : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
+              }`}
+            >
+              Nômade OS
+            </span>
+          </Link>
+  
+          {/* Scrollable Navigation Area Wrapper */}
+          <div className="relative flex-1 min-h-0 overflow-hidden">
+            <div
+              ref={scrollContainerRef}
+              onScroll={checkScroll}
+              className="h-full overflow-y-auto overflow-x-hidden px-3 space-y-4 scrollbar-thin scrollbar-thumb-white/5 select-none pr-1.5 pb-8"
+            >
+              {visibleCategories.map((cat, catIdx) => (
+                <div key={cat.title} className="flex flex-col gap-1">
+                  {isExpanded ? (
+                    <div className="px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-primary/70 select-none">
+                      {cat.title}
+                    </div>
+                  ) : (
+                    catIdx > 0 && <hr className="border-t border-white/5 my-1" />
+                  )}
+                  
+                  <div className="flex flex-col gap-1">
+                    {cat.items.map((item) => {
+                      const isActive = pathname === item.href
+                      const Icon = item.icon
+                      const badgeCount = getBadgeCount(item.href)
+    
+                      return (
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          onClick={sidebar.close}
+                          className={`group/item flex h-10 items-center rounded-lg px-3 transition-all duration-200 shrink-0 ${
+                            isActive
+                              ? 'bg-primary text-primary-foreground font-semibold shadow-md shadow-primary/10'
+                              : 'text-muted-foreground hover:bg-secondary/60 hover:text-foreground'
+                          }`}
+                          title={item.label}
+                        >
+                          <div className="relative shrink-0 flex items-center justify-center">
+                            <Icon className={`h-4.5 w-4.5 transition-transform duration-200 group-hover/item:scale-105 ${isActive ? 'text-primary-foreground' : 'text-muted-foreground group-hover/item:text-foreground'}`} />
+                            {!isExpanded && badgeCount > 0 && (
+                              <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                              </span>
+                            )}
+                          </div>
+                          <span
+                            className={`ml-3.5 text-xs transition-all duration-300 whitespace-nowrap ${
+                              isExpanded
+                                ? 'opacity-100 translate-x-0'
+                                : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
+                            }`}
+                          >
+                            {item.label}
+                          </span>
+                          {isExpanded && badgeCount > 0 && (
+                            <span className="ml-auto bg-red-500/20 border border-red-500/40 text-[10px] font-mono font-bold text-red-400 px-1.5 py-0.5 rounded-full shadow-sm animate-pulse">
+                              {badgeCount}
+                            </span>
+                          )}
+                        </Link>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Scroll Indicator */}
+            <AnimatePresence>
+              {showArrow && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-card/95 via-card/75 to-transparent pointer-events-none flex items-end justify-center pb-2 z-20"
+                >
+                  <motion.div
+                    animate={{
+                      y: [0, 4, 0],
+                    }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <ChevronDown className="h-4.5 w-4.5 text-foreground/60" />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+              {/* Bottom: User Info */}
+        <div className="flex flex-col gap-2 px-3 shrink-0 pt-6 mt-6 border-t border-border/10 pb-3">
+          {profile && (
+            <div className="flex items-center gap-3 px-1 mb-1 overflow-hidden">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-foreground border border-border/40">
+                {profile.username ? profile.username[0].toUpperCase() : 'U'}
+              </div>
+              <div
+                className={`flex flex-col min-w-0 transition-all duration-300 ${
+                  isExpanded ? 'opacity-100 translate-x-0' : 'pointer-events-none w-0 overflow-hidden opacity-0 -translate-x-2'
+                }`}
+              >
+                <span className="text-xs font-semibold text-foreground truncate">{profile.username}</span>
+              </div>
+            </div>
+          )}
+        </div>      </div>
+      </aside>
+    </>
+  )
+}
