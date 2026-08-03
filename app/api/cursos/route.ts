@@ -42,76 +42,90 @@ export interface Course {
   }>
 }
 
+function toValidUuid(val: string | undefined | null): string {
+  if (!val) return '00000000-0000-0000-0000-000000000000'
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+  if (uuidRegex.test(val)) return val
+  return '00000000-0000-0000-0000-000000000000'
+}
+
 // Safe read helper
 async function readCourses(): Promise<Course[]> {
+  let localCourses: Course[] = []
+  try {
+    const localContent = await fs.readFile(DATA_FILE, 'utf8')
+    localCourses = JSON.parse(localContent) as Course[]
+  } catch (_) {}
+
   const admin = getAdminClient()
   if (admin) {
     try {
       const { data, error } = await admin.from('cursos').select('*')
       if (!error && data) {
-        if (data.length === 0) {
-          try {
-            const localContent = await fs.readFile(DATA_FILE, 'utf8')
-            const localCourses = JSON.parse(localContent) as Course[]
-            if (localCourses.length > 0) {
-              const toInsert = localCourses.map(c => ({
-                id: c.id,
-                title: c.title,
-                description: c.description,
-                requirements: c.requirements,
-                start_date: c.startDate,
-                end_date: c.endDate,
-                vagas_limit: c.vagasLimit,
-                creator_id: c.creatorId,
-                creator_qra: c.creatorQra,
-                created_at: c.createdAt,
-                instructor_id: c.instructorId,
-                instructor_qra: c.instructorQra,
-                subscribers: c.subscribers || [],
-                read_by: c.readBy || [],
-                evaluations: c.evaluations || {}
-              }))
-              try {
-                await admin.from('cursos').insert(toInsert)
-              } catch (_) {}
-              return localCourses
-            }
-          } catch (_) {}
-        } else {
-          return data.map((row: any) => ({
-            id: row.id,
-            title: row.title,
-            description: row.description,
-            requirements: row.requirements,
-            startDate: row.start_date,
-            endDate: row.end_date,
-            vagasLimit: row.vagas_limit,
-            creatorId: row.creator_id,
-            creatorQra: row.creator_qra,
-            createdAt: row.created_at || new Date().toISOString(),
-            instructorId: row.instructor_id,
-            instructorQra: row.instructor_qra,
-            subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
-            readBy: Array.isArray(row.read_by) ? row.read_by : [],
-            evaluations: row.evaluations || {}
+        const dbCourses: Course[] = data.map((row: any) => ({
+          id: row.id,
+          title: row.title,
+          description: row.description,
+          requirements: row.requirements,
+          startDate: row.start_date,
+          endDate: row.end_date,
+          vagasLimit: row.vagas_limit,
+          creatorId: row.creator_id,
+          creatorQra: row.creator_qra,
+          createdAt: row.created_at || new Date().toISOString(),
+          instructorId: row.instructor_qra || row.instructor_id,
+          instructorQra: row.instructor_qra || 'Nenhum',
+          subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
+          readBy: Array.isArray(row.read_by) ? row.read_by : [],
+          evaluations: row.evaluations || {}
+        }))
+
+        // Merge: include any local courses that are missing from database
+        const dbIds = new Set(dbCourses.map(c => c.id))
+        const missingFromDb = localCourses.filter(c => !dbIds.has(c.id))
+
+        if (missingFromDb.length > 0) {
+          const toInsert = missingFromDb.map(c => ({
+            id: c.id,
+            title: c.title,
+            description: c.description,
+            requirements: c.requirements,
+            start_date: c.startDate,
+            end_date: c.endDate,
+            vagas_limit: c.vagasLimit,
+            creator_id: toValidUuid(c.creatorId),
+            creator_qra: c.creatorQra,
+            created_at: c.createdAt,
+            instructor_id: toValidUuid(c.instructorId),
+            instructor_qra: c.instructorQra || c.instructorId || 'Nenhum',
+            subscribers: c.subscribers || [],
+            read_by: c.readBy || [],
+            evaluations: c.evaluations || {}
           }))
+          try {
+            await admin.from('cursos').upsert(toInsert)
+          } catch (_) {}
+          return [...dbCourses, ...missingFromDb]
         }
+
+        return dbCourses
       }
     } catch (err) {
       console.error('Database courses read error:', err)
     }
   }
 
-  try {
-    const content = await fs.readFile(DATA_FILE, 'utf8')
-    return JSON.parse(content)
-  } catch (err) {
-    return []
-  }
+  return localCourses
 }
 
 // Safe write helper
 async function writeCourses(courses: Course[]) {
+  try {
+    await fs.writeFile(DATA_FILE, JSON.stringify(courses, null, 2), 'utf8')
+  } catch (err) {
+    console.error('File courses write error:', err)
+  }
+
   const admin = getAdminClient()
   if (admin) {
     try {
@@ -124,11 +138,11 @@ async function writeCourses(courses: Course[]) {
           start_date: c.startDate,
           end_date: c.endDate,
           vagas_limit: c.vagasLimit,
-          creator_id: c.creatorId,
+          creator_id: toValidUuid(c.creatorId),
           creator_qra: c.creatorQra,
           created_at: c.createdAt,
-          instructor_id: c.instructorId,
-          instructor_qra: c.instructorQra,
+          instructor_id: toValidUuid(c.instructorId),
+          instructor_qra: c.instructorQra || c.instructorId || 'Nenhum',
           subscribers: c.subscribers || [],
           read_by: c.readBy || [],
           evaluations: c.evaluations || {}
@@ -152,12 +166,6 @@ async function writeCourses(courses: Course[]) {
     } catch (err) {
       console.error('Database courses write error:', err)
     }
-  }
-
-  try {
-    await fs.writeFile(DATA_FILE, JSON.stringify(courses, null, 2), 'utf8')
-  } catch (err) {
-    console.error('File courses write error:', err)
   }
 }
 

@@ -390,6 +390,10 @@ export default function CursosPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Erro ao publicar curso.')
 
+      if (data.course) {
+        setCourses(prev => [data.course, ...prev.filter(c => c.id !== data.course.id)])
+      }
+
       // Reset Form
       setTitle('')
       setDescription('')
