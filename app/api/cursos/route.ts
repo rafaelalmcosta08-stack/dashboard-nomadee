@@ -71,28 +71,31 @@ async function readCourses(): Promise<Course[]> {
                 read_by: c.readBy || [],
                 evaluations: c.evaluations || {}
               }))
-              await admin.from('cursos').insert(toInsert)
+              try {
+                await admin.from('cursos').insert(toInsert)
+              } catch (_) {}
               return localCourses
             }
           } catch (_) {}
+        } else {
+          return data.map((row: any) => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            requirements: row.requirements,
+            startDate: row.start_date,
+            endDate: row.end_date,
+            vagasLimit: row.vagas_limit,
+            creatorId: row.creator_id,
+            creatorQra: row.creator_qra,
+            createdAt: row.created_at || new Date().toISOString(),
+            instructorId: row.instructor_id,
+            instructorQra: row.instructor_qra,
+            subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
+            readBy: Array.isArray(row.read_by) ? row.read_by : [],
+            evaluations: row.evaluations || {}
+          }))
         }
-        return data.map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          description: row.description,
-          requirements: row.requirements,
-          startDate: row.start_date,
-          endDate: row.end_date,
-          vagasLimit: row.vagas_limit,
-          creatorId: row.creator_id,
-          creatorQra: row.creator_qra,
-          createdAt: row.created_at || new Date().toISOString(),
-          instructorId: row.instructor_id,
-          instructorQra: row.instructor_qra,
-          subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
-          readBy: Array.isArray(row.read_by) ? row.read_by : [],
-          evaluations: row.evaluations || {}
-        }))
       }
     } catch (err) {
       console.error('Database courses read error:', err)
@@ -136,10 +139,12 @@ async function writeCourses(courses: Course[]) {
           console.error('Database cursos upsert error:', upsertErr)
         }
 
-        const ids = courses.map(c => `"${c.id}"`).join(',')
-        const { error: deleteErr } = await admin.from('cursos').delete().not('id', 'in', `(${ids})`)
-        if (deleteErr) {
-          console.error('Database cursos delete sync error:', deleteErr)
+        const ids = courses.map(c => c.id).filter(Boolean).join(',')
+        if (ids) {
+          const { error: deleteErr } = await admin.from('cursos').delete().not('id', 'in', `(${ids})`)
+          if (deleteErr) {
+            console.error('Database cursos delete sync error:', deleteErr)
+          }
         }
       } else {
         await admin.from('cursos').delete().neq('id', 'placeholder_nonexistent')
@@ -240,7 +245,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newCourse: Course = {
-      id: Math.random().toString(36).substring(2, 15),
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
       title: title.trim(),
       description: description.trim(),
       requirements: requirements.trim(),

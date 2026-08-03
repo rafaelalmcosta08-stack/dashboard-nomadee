@@ -94,10 +94,12 @@ async function writeAvisos(avisos: Aviso[]) {
           console.error('Database avisos upsert error:', upsertErr)
         }
 
-        const ids = avisos.map(a => `"${a.id}"`).join(',')
-        const { error: deleteErr } = await admin.from('avisos').delete().not('id', 'in', `(${ids})`)
-        if (deleteErr) {
-          console.error('Database avisos delete sync error:', deleteErr)
+        const ids = avisos.map(a => a.id).filter(Boolean).join(',')
+        if (ids) {
+          const { error: deleteErr } = await admin.from('avisos').delete().not('id', 'in', `(${ids})`)
+          if (deleteErr) {
+            console.error('Database avisos delete sync error:', deleteErr)
+          }
         }
       } else {
         await admin.from('avisos').delete().neq('id', 'placeholder_nonexistent')

@@ -63,25 +63,28 @@ async function readEditais(): Promise<Edital[]> {
                 subscribers: e.subscribers || [],
                 evaluations: e.evaluations || {}
               }))
-              await admin.from('editais').insert(toInsert)
+              try {
+                await admin.from('editais').insert(toInsert)
+              } catch (_) {}
               return localEditais
             }
           } catch (_) {}
+        } else {
+          return data.map((row: any) => ({
+            id: row.id,
+            title: row.title,
+            description: row.description,
+            requirements: row.requirements,
+            unidade: row.unidade as any,
+            linkFormulario: row.link_formulario,
+            endDate: row.end_date,
+            creatorId: row.creator_id,
+            creatorQra: row.creator_qra,
+            createdAt: row.created_at || new Date().toISOString(),
+            subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
+            evaluations: row.evaluations || {}
+          }))
         }
-        return data.map((row: any) => ({
-          id: row.id,
-          title: row.title,
-          description: row.description,
-          requirements: row.requirements,
-          unidade: row.unidade as any,
-          linkFormulario: row.link_formulario,
-          endDate: row.end_date,
-          creatorId: row.creator_id,
-          creatorQra: row.creator_qra,
-          createdAt: row.created_at || new Date().toISOString(),
-          subscribers: Array.isArray(row.subscribers) ? row.subscribers : [],
-          evaluations: row.evaluations || {}
-        }))
       }
     } catch (err) {
       console.error('Database editais read error:', err)
@@ -122,10 +125,12 @@ async function writeEditais(editais: Edital[]) {
           console.error('Database editais upsert error:', upsertErr)
         }
 
-        const ids = editais.map(e => `"${e.id}"`).join(',')
-        const { error: deleteErr } = await admin.from('editais').delete().not('id', 'in', `(${ids})`)
-        if (deleteErr) {
-          console.error('Database editais delete sync error:', deleteErr)
+        const ids = editais.map(e => e.id).filter(Boolean).join(',')
+        if (ids) {
+          const { error: deleteErr } = await admin.from('editais').delete().not('id', 'in', `(${ids})`)
+          if (deleteErr) {
+            console.error('Database editais delete sync error:', deleteErr)
+          }
         }
       } else {
         await admin.from('editais').delete().neq('id', 'placeholder_nonexistent')
@@ -271,7 +276,7 @@ export async function POST(req: NextRequest) {
     }
 
     const newEdital: Edital = {
-      id: Math.random().toString(36).substring(2, 15),
+      id: typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 15),
       title: title.trim(),
       description: description.trim(),
       requirements: requirements.trim(),
