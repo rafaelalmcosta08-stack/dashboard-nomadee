@@ -36,14 +36,12 @@ const CATEGORIES = [
 
 const UNIDADES = [
   'Todas',
-  'GAEP',
+  'RPM',
+  'GRR',
+  'GRAER',
   'GTM',
-  'GAR',
-  'BOPE',
-  'CORE',
-  'Corregedoria',
-  'APM',
-  'Sem Efetividade'
+  'CHOQUE',
+  'BOPE'
 ]
 
 const PATENTES = [

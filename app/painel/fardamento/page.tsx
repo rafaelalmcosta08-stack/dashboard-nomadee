@@ -37,14 +37,12 @@ const CATEGORIES = [
 
 const UNIDADES = [
   'Todas',
-  'GAEP',
+  'RPM',
+  'GRR',
+  'GRAER',
   'GTM',
-  'GAR',
-  'BOPE',
-  'CORE',
-  'Corregedoria',
-  'APM',
-  'Sem Efetividade'
+  'CHOQUE',
+  'BOPE'
 ]
 
 const PATENTES = [
@@ -166,8 +164,8 @@ export default function FardamentoPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !code.trim() || !category || !photoUrl.trim()) {
-      setError('Preencha todos os campos obrigatórios: Nome, Numeração/Peças, Categoria e Link da Imagem.')
+    if (!name.trim() || !code.trim() || !photoUrl.trim()) {
+      setError('Preencha todos os campos obrigatórios: Nome, Numeração/Peças e Link da Imagem.')
       return
     }
 
@@ -180,7 +178,7 @@ export default function FardamentoPage() {
       name: name.trim(),
       photoUrl: photoUrl.trim(),
       code: code.trim(),
-      category,
+      category: category || 'Farda Operacional',
       allowedUnits: selectedUnits,
       allowedPatentes: selectedPatentes
     }
@@ -517,19 +515,6 @@ export default function FardamentoPage() {
                   className="w-full h-24 px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground resize-y font-mono"
                   required
                 />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Categoria *</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                >
-                  {CATEGORIES.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
               </div>
 
               <div className="space-y-1.5">

@@ -27,15 +27,13 @@ interface Viatura {
 }
 
 const UNIDADES = [
-  'Geral',
-  'GAEP',
+  'Todas',
+  'RPM',
+  'GRR',
+  'GRAER',
   'GTM',
-  'GAR',
-  'BOPE',
-  'CORE',
-  'Corregedoria',
-  'APM',
-  'Sem Efetividade'
+  'CHOQUE',
+  'BOPE'
 ]
 
 const PATENTES = [
@@ -72,7 +70,7 @@ export default function ViaturaPage() {
   // Form State
   const [name, setName] = useState('')
   const [photoUrl, setPhotoUrl] = useState('')
-  const [unit, setUnit] = useState('Geral')
+  const [selectedUnits, setSelectedUnits] = useState<string[]>(['Todas'])
   const [selectedPatentes, setSelectedPatentes] = useState<string[]>(['Recruta'])
   const [submitting, setSubmitting] = useState(false)
 
@@ -103,7 +101,7 @@ export default function ViaturaPage() {
     setEditingItem(null)
     setName('')
     setPhotoUrl('')
-    setUnit('Geral')
+    setSelectedUnits(['Todas'])
     setSelectedPatentes(['Recruta'])
     setError(null)
     setIsModalOpen(true)
@@ -113,8 +111,22 @@ export default function ViaturaPage() {
     setEditingItem(item)
     setName(item.name)
     setPhotoUrl(item.photoUrl || '')
-    setUnit(item.unit)
     
+    let units: string[] = ['Todas']
+    if (item.unit) {
+      if (item.unit.startsWith('[')) {
+        try {
+          units = JSON.parse(item.unit)
+        } catch (_) {
+          units = item.unit.split(',').map(u => u.trim())
+        }
+      } else {
+        units = item.unit.split(',').map(u => u.trim())
+      }
+    }
+    units = units.map(u => (u === 'Geral' ? 'Todas' : u))
+    setSelectedUnits(units.length > 0 ? units : ['Todas'])
+
     let pats: string[] = ['Recruta']
     try {
       if (item.minPatente && item.minPatente.startsWith('[')) {
@@ -128,6 +140,22 @@ export default function ViaturaPage() {
     setSelectedPatentes(pats)
     setError(null)
     setIsModalOpen(true)
+  }
+
+  function handleUnitToggle(unitName: string) {
+    if (unitName === 'Todas') {
+      setSelectedUnits(['Todas'])
+      return
+    }
+    setSelectedUnits(prev => {
+      const copy = prev.filter(u => u !== 'Todas')
+      if (copy.includes(unitName)) {
+        const updated = copy.filter(u => u !== unitName)
+        return updated.length === 0 ? ['Todas'] : updated
+      } else {
+        return [...copy, unitName]
+      }
+    })
   }
 
   function handlePatenteToggle(pat: string) {
@@ -165,13 +193,15 @@ export default function ViaturaPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!name.trim() || !photoUrl.trim() || !unit || selectedPatentes.length === 0) {
-      setError('Preencha os campos obrigatórios: Modelo, Link da Imagem, Divisão e pelo menos uma Patente.')
+    if (!name.trim() || !photoUrl.trim() || selectedUnits.length === 0 || selectedPatentes.length === 0) {
+      setError('Preencha os campos obrigatórios: Modelo, Link da Imagem, Unidades e pelo menos uma Patente.')
       return
     }
 
     setSubmitting(true)
     setError(null)
+
+    const finalUnitStr = selectedUnits.includes('Todas') ? 'Todas' : selectedUnits.join(', ')
 
     const payload = {
       action: editingItem ? 'edit' : 'create',
@@ -179,7 +209,7 @@ export default function ViaturaPage() {
       name: name.trim(),
       photoUrl: photoUrl.trim(),
       prefix: editingItem?.prefix || undefined, // handled by server/kept on edit
-      unit,
+      unit: finalUnitStr,
       minPatente: selectedPatentes
     }
 
@@ -210,7 +240,8 @@ export default function ViaturaPage() {
   // Filtragem
   const filteredItems = items.filter(item => {
     const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase())
-    const matchesUnit = filterUnit === 'Todas' || item.unit === filterUnit
+    const itemUnits = item.unit ? item.unit.split(',').map(u => u.trim()) : ['Todas']
+    const matchesUnit = filterUnit === 'Todas' || itemUnits.includes('Todas') || itemUnits.includes('Geral') || itemUnits.includes(filterUnit)
     return matchesSearch && matchesUnit
   })
 
@@ -220,7 +251,8 @@ export default function ViaturaPage() {
 
     // 1. Unidade Responsável
     const myUnit = profile?.unidade_operacional || 'Sem Efetividade'
-    const unitAllowed = item.unit === 'Geral' || item.unit === myUnit
+    const itemUnits = item.unit ? item.unit.split(',').map(u => u.trim()) : ['Todas']
+    const unitAllowed = itemUnits.includes('Todas') || itemUnits.includes('Geral') || itemUnits.includes(myUnit)
 
     // 2. Patente Mínima / Patentes Autorizadas
     let pats: string[] = []
@@ -488,19 +520,6 @@ export default function ViaturaPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-foreground">Divisão Responsável *</label>
-                <select
-                  value={unit}
-                  onChange={(e) => setUnit(e.target.value)}
-                  className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
-                >
-                  {UNIDADES.map(u => (
-                    <option key={u} value={u}>{u}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground block">Foto da Viatura *</label>
                 <input
                   type="url"
@@ -510,6 +529,31 @@ export default function ViaturaPage() {
                   className="w-full px-3 py-2 bg-secondary/30 rounded-lg border border-border/60 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40 text-foreground"
                   required
                 />
+              </div>
+
+              <div className="space-y-2 border-t border-border/10 pt-3">
+                <span className="text-xs font-semibold text-foreground block">Unidades Autorizadas</span>
+                <p className="text-[10px] text-muted-foreground mb-2">Quais divisões táticas têm acesso a esta viatura.</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {UNIDADES.map(u => {
+                    const active = selectedUnits.includes(u)
+                    return (
+                      <button
+                        key={u}
+                        type="button"
+                        onClick={() => handleUnitToggle(u)}
+                        className={`px-2.5 py-1 text-[10px] rounded border transition-colors flex items-center gap-1 ${
+                          active 
+                            ? 'bg-primary/10 border-primary text-primary font-bold' 
+                            : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40'
+                        }`}
+                      >
+                        {active && <Check className="h-3 w-3" />}
+                        {u}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
 
               <div className="space-y-2 border-t border-border/10 pt-3">

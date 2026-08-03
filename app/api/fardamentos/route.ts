@@ -84,7 +84,8 @@ export async function POST(req: NextRequest) {
 
   if (action === 'create') {
     const { name, photoUrl, code, category, allowedUnits, allowedPatentes } = body
-    if (!name?.trim() || !code?.trim() || !category?.trim()) {
+    const catName = category?.trim() || 'Farda Operacional'
+    if (!name?.trim() || !code?.trim()) {
       return NextResponse.json({ error: 'Preencha todos os campos obrigatórios.' }, { status: 400 })
     }
 
@@ -94,7 +95,7 @@ export async function POST(req: NextRequest) {
       name: name.trim(),
       photo_url: resolvedPhotoUrl || null,
       code: code.trim(),
-      category: category.trim(),
+      category: catName,
       allowed_units: Array.isArray(allowedUnits) ? allowedUnits : [],
       allowed_patentes: Array.isArray(allowedPatentes) ? allowedPatentes : [],
       created_at: new Date().toISOString()
