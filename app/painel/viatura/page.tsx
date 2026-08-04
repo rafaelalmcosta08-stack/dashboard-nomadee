@@ -263,28 +263,32 @@ function getMinPatenteInfo(rawPatentes: any) {
   }
 
   if (pats.includes('ALL_BY_UNIT')) {
-    return { isAllByUnit: true, label: 'Toda a Hierarquia da Unidade', minPatente: null, minPatenteIndex: 999 }
+    return { isAllByUnit: true, label: 'Toda a Hierarquia da Unidade', minPatente: null, minPatenteIndex: -1 }
   }
 
   const validPats = pats.map(p => p.replace(/\+$/, '')).filter(p => PATENTES.includes(p))
 
+  const recrutaIdx = PATENTES.indexOf('Recruta') !== -1 ? PATENTES.indexOf('Recruta') : PATENTES.length - 1
+
   if (validPats.length === 0) {
-    return { isAllByUnit: false, label: 'Recruta+', minPatente: 'Recruta', minPatenteIndex: 0 }
+    return { isAllByUnit: false, label: 'Recruta+', minPatente: 'Recruta', minPatenteIndex: recrutaIdx }
   }
 
-  let minPatenteIndex = 999
+  let minPatenteIndex = -1
   let minPatenteName = 'Recruta'
 
+  // No array PATENTES, a menor patente (Recruta) tem o maior índice (13) e Coronel o menor (0).
+  // A patente mínima autorizada é a menor patente da lista (maior índice em PATENTES).
   for (const pat of validPats) {
     const idx = PATENTES.indexOf(pat)
-    if (idx !== -1 && idx < minPatenteIndex) {
+    if (idx > minPatenteIndex) {
       minPatenteIndex = idx
       minPatenteName = pat
     }
   }
 
-  if (minPatenteIndex === 999) {
-    minPatenteIndex = 0
+  if (minPatenteIndex === -1) {
+    minPatenteIndex = recrutaIdx
     minPatenteName = 'Recruta'
   }
 
@@ -312,18 +316,27 @@ function getMinPatenteInfo(rawPatentes: any) {
     if (info.isAllByUnit) return unitAllowed
 
     const userIdx = PATENTES.indexOf(myPatente)
-    const patenteAllowed = userIdx !== -1 && userIdx >= info.minPatenteIndex
+    // O usuário pode conduzir se sua patente for maior ou igual à patente mínima
+    // Em PATENTES, patente maior = menor índice (Coronel 0 <= Soldado 12)
+    const patenteAllowed = userIdx !== -1 && userIdx <= info.minPatenteIndex
 
     return unitAllowed && patenteAllowed
   }
 
-  // Ordenação: Menor patente -> Maior patente -> Toda a Hierarquia da Unidade
+  // Ordenação: Menor patente (Recruta+) -> Maior patente (Coronel+) -> Toda a Hierarquia da Unidade
   const sortedItems = [...filteredItems].sort((a, b) => {
     const infoA = getMinPatenteInfo(a.minPatente)
     const infoB = getMinPatenteInfo(b.minPatente)
 
+    // Toda a Hierarquia da Unidade sempre fica por último
+    if (infoA.isAllByUnit && !infoB.isAllByUnit) return 1
+    if (!infoA.isAllByUnit && infoB.isAllByUnit) return -1
+    if (infoA.isAllByUnit && infoB.isAllByUnit) return a.name.localeCompare(b.name, 'pt-BR')
+
+    // Em PATENTES: Recruta = index 13 (maior índice), Coronel = index 0 (menor índice).
+    // Para ordenar do MENOR posto (Recruta) para o MAIOR posto (Coronel), ordenamos por minPatenteIndex DECRESCENTE (13, 12, 11... 0).
     if (infoA.minPatenteIndex !== infoB.minPatenteIndex) {
-      return infoA.minPatenteIndex - infoB.minPatenteIndex
+      return infoB.minPatenteIndex - infoA.minPatenteIndex
     }
 
     return a.name.localeCompare(b.name, 'pt-BR')

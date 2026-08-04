@@ -97,9 +97,8 @@ export function PainelSidebar() {
       ]
     },
     {
-      title: 'Formação Policial',
+      title: 'Editais Unidades',
       items: [
-        { label: 'Cursos', href: '/painel/cursos', icon: GraduationCap, visible: true },
         { label: 'Editais', href: '/painel/editais', icon: FileText, visible: true },
       ]
     },
