@@ -261,31 +261,36 @@ function getMinPatenteInfo(rawPatentes: any) {
   }
 
   if (pats.includes('ALL_BY_UNIT')) {
-    return { isAllByUnit: true, label: 'Toda a Hierarquia da Unidade', minPatente: null, maxIndex: 13 }
+    return { isAllByUnit: true, label: 'Toda a Hierarquia da Unidade', minPatente: null, minPatenteIndex: 999 }
   }
 
   const validPats = pats.map(p => p.replace(/\+$/, '')).filter(p => PATENTES.includes(p))
 
   if (validPats.length === 0) {
-    return { isAllByUnit: false, label: 'Recruta+', minPatente: 'Recruta', maxIndex: 13 }
+    return { isAllByUnit: false, label: 'Recruta+', minPatente: 'Recruta', minPatenteIndex: 0 }
   }
 
-  let maxIndex = -1
+  let minPatenteIndex = 999
   let minPatenteName = 'Recruta'
 
   for (const pat of validPats) {
     const idx = PATENTES.indexOf(pat)
-    if (idx > maxIndex) {
-      maxIndex = idx
+    if (idx !== -1 && idx < minPatenteIndex) {
+      minPatenteIndex = idx
       minPatenteName = pat
     }
+  }
+
+  if (minPatenteIndex === 999) {
+    minPatenteIndex = 0
+    minPatenteName = 'Recruta'
   }
 
   return {
     isAllByUnit: false,
     label: `${minPatenteName}+`,
     minPatente: minPatenteName,
-    maxIndex
+    minPatenteIndex
   }
 }
 
@@ -304,10 +309,22 @@ function canUserUseItem(item: Armamento) {
   if (info.isAllByUnit) return unitAllowed
 
   const userIdx = PATENTES.indexOf(myPatente)
-  const patenteAllowed = userIdx !== -1 && userIdx <= info.maxIndex
+  const patenteAllowed = userIdx !== -1 && userIdx >= info.minPatenteIndex
 
   return unitAllowed && patenteAllowed
 }
+
+  // Ordenação: Menor patente -> Maior patente -> Toda a Hierarquia da Unidade
+  const sortedItems = [...filteredItems].sort((a, b) => {
+    const infoA = getMinPatenteInfo(a.minPatente)
+    const infoB = getMinPatenteInfo(b.minPatente)
+
+    if (infoA.minPatenteIndex !== infoB.minPatenteIndex) {
+      return infoA.minPatenteIndex - infoB.minPatenteIndex
+    }
+
+    return a.name.localeCompare(b.name, 'pt-BR')
+  })
 
   return (
     <main className="mx-auto max-w-[1400px] px-6 pb-24 pt-10 sm:px-10 lg:px-12">
@@ -365,7 +382,7 @@ function canUserUseItem(item: Armamento) {
         <div className="flex justify-center items-center py-20">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
         </div>
-      ) : filteredItems.length === 0 ? (
+      ) : sortedItems.length === 0 ? (
         <div className="text-center py-16 bg-card/20 rounded-2xl border border-border/40 p-10">
           <Crosshair className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-55" />
           <h3 className="text-lg font-semibold">Nenhuma arma cadastrada</h3>
@@ -373,7 +390,7 @@ function canUserUseItem(item: Armamento) {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredItems.map((item) => {
+          {sortedItems.map((item) => {
             const allowed = canUserUseItem(item)
             return (
               <div 
