@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
   const isAltoComando = cargos.includes('Alto Comando') || isAdmin
 
   const isRequester = cargos.some((c: string) =>
-    ['Comando Bope', 'Comando Core', 'Comando GAR', 'Comando GAEP', 'Comando GTM', 'Diretor APM', 'Diretor Corregedoria'].includes(c)
+    ['Comando Bope', 'Comando Core', 'Comando GAR', 'Comando GAEP', 'Comando ROCAM', 'Comando GTM', 'Diretor APM', 'Diretor Corregedoria'].includes(c)
   )
 
   // Permitir que qualquer usuário aprovado consulte as solicitações, porém restringindo o escopo:
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Patente inválida.' }, { status: 400 })
     }
   } else {
-    const validUnits = ['BOPE', 'CORE', 'GAR', 'GAEP', 'GTM', 'APM', 'Corregedoria']
+    const validUnits = ['BOPE', 'CORE', 'GAR', 'GAEP', 'ROCAM', 'GTM', 'APM', 'Corregedoria']
     if (!validUnits.includes(unidade)) {
       return NextResponse.json({ error: 'Unidade de destino inválida.' }, { status: 400 })
     }
@@ -287,7 +287,7 @@ export async function PATCH(req: NextRequest) {
       console.error('Erro ao atualizar perfil do oficial no banco:', profileUpdateError)
     }
   } else {
-    if (['BOPE', 'CORE', 'GAR', 'GAEP', 'GTM'].includes(unidade)) {
+    if (['BOPE', 'CORE', 'GAR', 'GAEP', 'ROCAM', 'GTM'].includes(unidade)) {
       novoMeta.unidade_operacional = unidade
       
       let tag = ''
@@ -295,7 +295,8 @@ export async function PATCH(req: NextRequest) {
       else if (unidade === 'CORE') tag = 'Probatório Core'
       else if (unidade === 'GAR') tag = 'Membro GAR'
       else if (unidade === 'GAEP') tag = 'Membro GAEP'
-      else if (unidade === 'GTM') tag = 'Membro GTM'
+      else if (unidade === 'ROCAM') tag = 'Membro ROCAM'
+      else if (unidade === 'GTM') tag = 'Membro ROCAM'
 
       if (tag && !targetCargos.includes(tag)) {
         novoMeta.cargo = [...targetCargos, tag]

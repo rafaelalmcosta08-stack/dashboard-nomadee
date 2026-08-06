@@ -34,7 +34,7 @@ const UNIDADES = [
   'RPM',
   'GRR',
   'GRAER',
-  'GTM',
+  'ROCAM',
   'CHOQUE',
   'BOPE'
 ]
@@ -380,22 +380,37 @@ export default function ArmamentoPage() {
     return matchesSearch && matchesUnit
   })
 
-  // Ordenação: Menor patente (Recruta+) -> Maior patente (Coronel+) -> Toda a Hierarquia da Unidade
+  // Helper para identificar se um registro é específico de Unidade ou Toda a Hierarquia
+  function isUnitItem(item: Armamento) {
+    const info = getMinPatenteInfo(item.minPatente)
+    const isSpecificUnit = !item.allowedUnits.includes('Todas') && item.allowedUnits.length > 0
+    return info.isAllByUnit || isSpecificUnit
+  }
+
+  // Ordenação: 
+  // 1. Distribuições Gerais por Patente (do MENOR posto [Recruta] ao MAIOR [Coronel])
+  // 2. Por último, Distribuições por Unidade (ex: GRR, RPM, COE, Toda a Hierarquia)
   const sortedItems = [...filteredItems].sort((a, b) => {
-    const infoA = getMinPatenteInfo(a.minPatente)
-    const infoB = getMinPatenteInfo(b.minPatente)
+    const aIsUnit = isUnitItem(a)
+    const bIsUnit = isUnitItem(b)
 
-    // Toda a Hierarquia da Unidade sempre fica por último
-    if (infoA.isAllByUnit && !infoB.isAllByUnit) return 1
-    if (!infoA.isAllByUnit && infoB.isAllByUnit) return -1
-    if (infoA.isAllByUnit && infoB.isAllByUnit) return a.name.localeCompare(b.name, 'pt-BR')
+    // Se um é de Unidade e o outro é Geral por Patente, o de Unidade fica por último
+    if (!aIsUnit && bIsUnit) return -1
+    if (aIsUnit && !bIsUnit) return 1
 
-    // Em PATENTES: Recruta = index 13 (maior índice), Coronel = index 0 (menor índice).
-    // Para ordenar do MENOR posto (Recruta) para o MAIOR posto (Coronel), ordenamos por minPatenteIndex DECRESCENTE (13, 12, 11... 0).
-    if (infoA.minPatenteIndex !== infoB.minPatenteIndex) {
-      return infoB.minPatenteIndex - infoA.minPatenteIndex
+    // Se ambos forem Geral por Patente:
+    if (!aIsUnit && !bIsUnit) {
+      const infoA = getMinPatenteInfo(a.minPatente)
+      const infoB = getMinPatenteInfo(b.minPatente)
+
+      // Em PATENTES: Recruta = index 13 (menor posto), Coronel = index 0 (maior posto).
+      // Ordenação do menor posto para o maior posto (13 -> 12 -> 11... -> 0):
+      if (infoA.minPatenteIndex !== infoB.minPatenteIndex) {
+        return infoB.minPatenteIndex - infoA.minPatenteIndex
+      }
     }
 
+    // Desempate alfabético por nome
     return a.name.localeCompare(b.name, 'pt-BR')
   })
 

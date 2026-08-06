@@ -446,6 +446,9 @@ const CARGOS = [
   'Comando GAEP',
   'Coordenador GAEP',
   'Membro GAEP',
+  'Comando ROCAM',
+  'Coordenador ROCAM',
+  'Membro ROCAM',
   'Comando GTM',
   'Coordenador GTM',
   'Membro GTM',
@@ -472,7 +475,8 @@ const CARGO_PERMISSIONS: Record<string, string[]> = {
   'Comando Core': ['Coordenador Core', 'Executor Core', 'Operador Core', 'Probatório Core'],
   'Comando GAEP': ['Coordenador GAEP', 'Membro GAEP'],
   'Comando GAR': ['Coordenador GAR', 'Membro GAR'],
-  'Comando GTM': ['Coordenador GTM', 'Membro GTM'],
+  'Comando ROCAM': ['Coordenador ROCAM', 'Membro ROCAM'],
+  'Comando GTM': ['Coordenador GTM', 'Membro GTM', 'Coordenador ROCAM', 'Membro ROCAM'],
 }
 
 function getMyHighestCargoIndex(cargosList: string[]) {
@@ -529,7 +533,7 @@ function getAllowedUnidadesAdministrativas(promoterCargos: string[] | undefined)
 function getAllowedUnidadesOperacionais(promoterCargos: string[] | undefined) {
   if (!promoterCargos || promoterCargos.length === 0) return []
   if (promoterCargos.includes('Alto Comando')) {
-    return ['GAEP', 'GTM', 'GAR', 'BOPE', 'CORE', 'Sem Efetividade']
+    return ['GAEP', 'ROCAM', 'GTM', 'GAR', 'BOPE', 'CORE', 'Sem Efetividade']
   }
   return []
 }

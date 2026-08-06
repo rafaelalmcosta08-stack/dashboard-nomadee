@@ -17,7 +17,7 @@ export interface Edital {
   title: string
   description: string
   requirements?: string
-  unidade: 'GAEP' | 'GTM' | 'GAR' | 'BOPE' | 'CORE' | 'Corregedoria' | 'APM' | 'Geral'
+  unidade: 'GAEP' | 'ROCAM' | 'GTM' | 'GAR' | 'BOPE' | 'CORE' | 'Corregedoria' | 'APM' | 'Geral'
   linkFormulario: string
   endDate: string // "YYYY-MM-DDTHH:mm" format in Brasília time
   creatorId: string
@@ -224,7 +224,7 @@ export async function POST(req: NextRequest) {
   const isCoreCommand = myCargos.includes('Comando Core')
   const isGarCommand = myCargos.includes('Comando GAR')
   const isGaepCommand = myCargos.includes('Comando GAEP')
-  const isGtmCommand = myCargos.includes('Comando GTM')
+  const isGtmCommand = myCargos.includes('Comando GTM') || myCargos.includes('Comando ROCAM')
 
   const isAuthorizedToManage =
     isAllPowerfulEditalPublisher ||
@@ -278,8 +278,8 @@ export async function POST(req: NextRequest) {
       if (isGaepCommand && unidade !== 'GAEP') {
         return NextResponse.json({ error: 'Você só pode publicar editais para a unidade GAEP.' }, { status: 403 })
       }
-      if (isGtmCommand && unidade !== 'GTM') {
-        return NextResponse.json({ error: 'Você só pode publicar editais para a unidade GTM.' }, { status: 403 })
+      if (isGtmCommand && unidade !== 'GTM' && unidade !== 'ROCAM') {
+        return NextResponse.json({ error: 'Você só pode publicar editais para a unidade ROCAM.' }, { status: 403 })
       }
     }
 
@@ -335,7 +335,7 @@ export async function POST(req: NextRequest) {
         (isCoreCommand && edital.unidade === 'CORE') ||
         (isGarCommand && edital.unidade === 'GAR') ||
         (isGaepCommand && edital.unidade === 'GAEP') ||
-        (isGtmCommand && edital.unidade === 'GTM')
+        (isGtmCommand && (edital.unidade === 'GTM' || edital.unidade === 'ROCAM'))
 
       if (!unitMatch && !isOwner) {
         return NextResponse.json({ error: 'Sem permissão para gerenciar este edital.' }, { status: 403 })
@@ -372,8 +372,8 @@ export async function POST(req: NextRequest) {
       if (isGaepCommand && unidade !== 'GAEP') {
         return NextResponse.json({ error: 'Você só pode alterar o edital para a unidade GAEP.' }, { status: 403 })
       }
-      if (isGtmCommand && unidade !== 'GTM') {
-        return NextResponse.json({ error: 'Você só pode alterar o edital para a unidade GTM.' }, { status: 403 })
+      if (isGtmCommand && unidade !== 'GTM' && unidade !== 'ROCAM') {
+        return NextResponse.json({ error: 'Você só pode alterar o edital para a unidade ROCAM.' }, { status: 403 })
       }
     }
 
@@ -421,7 +421,7 @@ export async function POST(req: NextRequest) {
         (isCoreCommand && edital.unidade === 'CORE') ||
         (isGarCommand && edital.unidade === 'GAR') ||
         (isGaepCommand && edital.unidade === 'GAEP') ||
-        (isGtmCommand && edital.unidade === 'GTM')
+        (isGtmCommand && (edital.unidade === 'GTM' || edital.unidade === 'ROCAM'))
 
       if (!unitMatch && !isOwner) {
         return NextResponse.json({ error: 'Sem permissão para excluir este edital.' }, { status: 403 })
@@ -558,7 +558,7 @@ export async function POST(req: NextRequest) {
         (isCoreCommand && edital.unidade === 'CORE') ||
         (isGarCommand && edital.unidade === 'GAR') ||
         (isGaepCommand && edital.unidade === 'GAEP') ||
-        (isGtmCommand && edital.unidade === 'GTM')
+        (isGtmCommand && (edital.unidade === 'GTM' || edital.unidade === 'ROCAM'))
 
       if (!unitMatch && !isOwner) {
         return NextResponse.json({ error: 'Sem permissão para avaliar participantes deste edital.' }, { status: 403 })

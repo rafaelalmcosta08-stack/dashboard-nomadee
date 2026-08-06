@@ -166,8 +166,9 @@ export function hasCanalAccess(profile: any, canal: string): boolean {
       return isAltoComando || unidade.toUpperCase() === 'CORE'
     case 'gaep':
       return isAltoComando || unidade.toUpperCase() === 'GAEP'
+    case 'rocam':
     case 'gtm':
-      return isAltoComando || unidade.toUpperCase() === 'GTM'
+      return isAltoComando || unidade.toUpperCase() === 'ROCAM' || unidade.toUpperCase() === 'GTM'
     case 'gar':
       return isAltoComando || unidade.toUpperCase() === 'GAR'
     case 'alto-comando':

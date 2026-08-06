@@ -36,7 +36,8 @@ const CANAL_TITLES: Record<string, string> = {
   'bope': 'Chat BOPE',
   'core': 'Chat CORE',
   'gaep': 'Chat GAEP',
-  'gtm': 'Chat GTM',
+  'rocam': 'Chat ROCAM',
+  'gtm': 'Chat ROCAM',
   'gar': 'Chat GAR',
   'alto-comando': 'Chat Alto Comando',
 }
@@ -86,8 +87,9 @@ export default function ChatCanalPage({
         return isAltoComando || unidade.toUpperCase() === 'CORE'
       case 'gaep':
         return isAltoComando || unidade.toUpperCase() === 'GAEP'
+      case 'rocam':
       case 'gtm':
-        return isAltoComando || unidade.toUpperCase() === 'GTM'
+        return isAltoComando || unidade.toUpperCase() === 'ROCAM' || unidade.toUpperCase() === 'GTM'
       case 'gar':
         return isAltoComando || unidade.toUpperCase() === 'GAR'
       case 'alto-comando':
@@ -275,6 +277,7 @@ export default function ChatCanalPage({
         return { bg: 'border-red-500/30 bg-red-500/5', text: 'text-red-500', badge: 'bg-red-500/10 text-red-400 border-red-500/20' }
       case 'gaep':
         return { bg: 'border-indigo-500/30 bg-indigo-500/5', text: 'text-indigo-400', badge: 'bg-indigo-500/10 text-indigo-300 border-indigo-500/20' }
+      case 'rocam':
       case 'gtm':
         return { bg: 'border-sky-500/30 bg-sky-500/5', text: 'text-sky-400', badge: 'bg-sky-500/10 text-sky-300 border-sky-500/20' }
       case 'gar':

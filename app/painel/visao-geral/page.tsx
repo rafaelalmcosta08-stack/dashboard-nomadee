@@ -169,6 +169,7 @@ export default function VisaoGeralPage() {
     BOPE: 0,
     CORE: 0,
     GAR: 0,
+    ROCAM: 0,
     GTM: 0,
     GAEP: 0,
     'Sem Efetividade': 0
@@ -452,7 +453,7 @@ export default function VisaoGeralPage() {
               <option value="BOPE">BOPE</option>
               <option value="CORE">CORE</option>
               <option value="GAR">GAR</option>
-              <option value="GTM">GTM</option>
+              <option value="ROCAM">ROCAM</option>
               <option value="GAEP">GAEP</option>
               <option value="Sem Efetividade">Sem Efetividade</option>
             </select>

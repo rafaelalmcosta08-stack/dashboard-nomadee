@@ -49,7 +49,8 @@ const UNIT_LABELS: Record<string, string> = {
   CORE: 'CORE (Coordenadoria de Recursos Especiais)',
   GAR: 'GAR (Grupo de Ações Rápidas)',
   GAEP: 'GAEP (Grupo de Apoio Escolta e Policiamento)',
-  GTM: 'GTM (Grupo Tático de Motocicletas)',
+  ROCAM: 'ROCAM (Ronda Ostensiva Com Apoio de Motocicletas)',
+  GTM: 'ROCAM (Ronda Ostensiva Com Apoio de Motocicletas)',
   APM: 'APM (Academia de Polícia Militar)',
   Corregedoria: 'Corregedoria Geral'
 }
@@ -59,7 +60,8 @@ const UNIT_COMMANDERS: Record<string, string> = {
   'CORE': 'Comando Core',
   'GAR': 'Comando GAR',
   'GAEP': 'Comando GAEP',
-  'GTM': 'Comando GTM',
+  'ROCAM': 'Comando ROCAM',
+  'GTM': 'Comando ROCAM',
   'APM': 'Diretor APM',
   'Corregedoria': 'Diretor Corregedoria'
 }
@@ -345,7 +347,7 @@ export default function RegistroUnidadePage() {
                   <span className="font-bold">Permissão Insuficiente</span>
                 </div>
                 <p>
-                  Apenas os comandantes das respectivas unidades (BOPE, CORE, GAR, GAEP, GTM, APM, Corregedoria) ou membros do Alto Comando possuem acesso para solicitar registros de transferência.
+                  Apenas os comandantes das respectivas unidades (BOPE, CORE, GAR, GAEP, ROCAM, APM, Corregedoria) ou membros do Alto Comando possuem acesso para solicitar registros de transferência.
                 </p>
               </div>
             ) : (
