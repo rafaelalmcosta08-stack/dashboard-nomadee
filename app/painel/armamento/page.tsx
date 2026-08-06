@@ -465,8 +465,8 @@ export default function ArmamentoPage() {
         <div className="space-y-6">
           {sortedItems.map((item) => {
             const weapons = parseWeaponsList(item)
-            const allowed = canUserUseItem(item)
             const minInfo = getMinPatenteInfo(item.minPatente)
+            const isUnitSpecific = (!item.allowedUnits.includes('Todas') && item.allowedUnits.length > 0) || minInfo.isAllByUnit
 
             return (
               <div 
@@ -478,23 +478,21 @@ export default function ArmamentoPage() {
                   <div className="flex flex-wrap items-center gap-3">
                     <h2 className="text-xl font-bold tracking-tight text-foreground">{item.name}</h2>
                     
-                    <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/25">
-                      {minInfo.label}
-                    </span>
-
-                    {item.allowedUnits.length > 0 && (
-                      <span className="text-[10px] font-medium px-2.5 py-0.5 rounded-full bg-secondary/60 text-muted-foreground border border-border/30">
-                        {item.allowedUnits.includes('Todas') ? 'Todas as Unidades' : item.allowedUnits.join(', ')}
+                    {!isUnitSpecific && (
+                      <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-primary/15 text-primary border border-primary/25">
+                        {minInfo.label}
                       </span>
                     )}
 
-                    {allowed ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-400 bg-emerald-500/10 px-2.5 py-0.5 rounded-full border border-emerald-500/20">
-                        <ShieldCheck className="h-3 w-3" /> Seu Posto Autorizado
+                    {item.allowedUnits.length > 0 && !item.allowedUnits.includes('Todas') && (
+                      <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                        {item.allowedUnits.join(', ')}
                       </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground bg-secondary/30 px-2.5 py-0.5 rounded-full border border-border/30">
-                        <ShieldAlert className="h-3 w-3" /> Requer {minInfo.label}
+                    )}
+
+                    {minInfo.isAllByUnit && item.allowedUnits.includes('Todas') && (
+                      <span className="text-[11px] font-bold px-3 py-1 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                        Toda a Hierarquia
                       </span>
                     )}
                   </div>
@@ -646,33 +644,60 @@ export default function ArmamentoPage() {
                 <div>
                   <span className="text-xs font-semibold text-foreground block">Patente Mínima Exigida</span>
                   <p className="text-[10px] text-muted-foreground">
-                    Selecione qual é a <strong className="text-foreground font-semibold">patente mínima</strong> para ter acesso a esta lista.
+                    Selecione qual é a <strong className="text-foreground font-semibold">patente mínima</strong> para ter acesso a esta lista ou libere para toda a hierarquia.
                   </p>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
-                  {PATENTES.map(pat => {
-                    const info = getMinPatenteInfo(selectedPatentes)
-                    const isMin = info.minPatente === pat
-                    return (
-                      <button
-                        key={pat}
-                        type="button"
-                        onClick={() => setSelectedPatentes([pat])}
-                        className={`px-2.5 py-1.5 text-[10px] rounded-lg border text-left transition-all flex items-center justify-between gap-1.5 ${
-                          isMin 
-                            ? 'bg-primary/15 border-primary text-primary font-bold shadow-sm' 
-                            : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
-                        }`}
-                      >
-                        <span className="truncate">{pat}</span>
-                        <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-primary border border-primary/20 shrink-0 font-mono">
-                          {pat}+
-                        </span>
-                      </button>
-                    )
-                  })}
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (selectedPatentes.includes('ALL_BY_UNIT')) {
+                      setSelectedPatentes(['Recruta'])
+                    } else {
+                      setSelectedPatentes(['ALL_BY_UNIT'])
+                    }
+                  }}
+                  className={`w-full p-2.5 rounded-lg border text-left text-xs transition-colors mb-2 flex items-center justify-between ${
+                    selectedPatentes.includes('ALL_BY_UNIT')
+                      ? 'bg-amber-500/10 border-amber-500/30 text-amber-400 font-bold'
+                      : 'bg-secondary/10 border-border/40 text-muted-foreground hover:bg-secondary/20'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <div className={`h-3.5 w-3.5 rounded border flex items-center justify-center shrink-0 ${
+                      selectedPatentes.includes('ALL_BY_UNIT') ? 'border-amber-400 bg-amber-400 text-black' : 'border-border'
+                    }`}>
+                      {selectedPatentes.includes('ALL_BY_UNIT') && <Check className="h-3 w-3 stroke-[3]" />}
+                    </div>
+                    <span>Toda a Hierarquia da Unidade (Sem restrição de Patente)</span>
+                  </div>
+                </button>
+
+                {!selectedPatentes.includes('ALL_BY_UNIT') && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 pt-1">
+                    {PATENTES.map(pat => {
+                      const info = getMinPatenteInfo(selectedPatentes)
+                      const isMin = info.minPatente === pat
+                      return (
+                        <button
+                          key={pat}
+                          type="button"
+                          onClick={() => setSelectedPatentes([pat])}
+                          className={`px-2.5 py-1.5 text-[10px] rounded-lg border text-left transition-all flex items-center justify-between gap-1.5 ${
+                            isMin 
+                              ? 'bg-primary/15 border-primary text-primary font-bold shadow-sm' 
+                              : 'bg-secondary/20 border-border/40 text-muted-foreground hover:bg-secondary/40 hover:text-foreground'
+                          }`}
+                        >
+                          <span className="truncate">{pat}</span>
+                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-black/40 text-primary border border-primary/20 shrink-0 font-mono">
+                            {pat}+
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-3 pt-6 border-t border-border/10 mt-6">
